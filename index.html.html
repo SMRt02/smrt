@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Электронная библиотека</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: white;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Стили для книжных полок */
+        .bookshelf-left, .bookshelf-right {
+            position: fixed;
+            top: 0;
+            width: 120px;
+            height: 100vh;
+            background: linear-gradient(135deg, #87CEEB, #4682B4);
+            z-index: 1;
+            box-shadow: 5px 0 20px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 5px;
+            gap: 30px;
+        }
+
+        .bookshelf-left {
+            left: 0;
+            border-radius: 0 15px 15px 0;
+        }
+
+        .bookshelf-right {
+            right: 0;
+            border-radius: 15px 0 0 15px;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.4);
+        }
+
+        /* Стили для Disney-книг */
+        .disney-book {
+            position: relative;
+            width: 80px;
+            height: 300px;
+            border-radius: 8px 15px 15px 8px;
+            box-shadow: 
+                3px 0 8px rgba(0,0,0,0.3),
+                inset -2px 0 5px rgba(255,255,255,0.5);
+            margin-bottom: 10px;
+            border-left: 4px solid rgba(255,255,255,0.8);
+            transform: perspective(500px) rotateY(-5deg);
+            transition: all 0.3s ease;
+        }
+
+        .disney-book:hover {
+            transform: perspective(500px) rotateY(-2deg) translateX(5px);
+            box-shadow: 
+                5px 0 15px rgba(0,0,0,0.4),
+                inset -2px 0 8px rgba(255,255,255,0.6);
+        }
+
+        /* Яркие Disney цвета для книг */
+        .book-disney-1 { 
+            background: linear-gradient(45deg, #FF6B9D, #FF8E53);
+            border-top: 8px solid #FFD166;
+            border-bottom: 8px solid #FFD166;
+        }
+        .book-disney-2 { 
+            background: linear-gradient(45deg, #4ECDC4, #88E0D0);
+            border-top: 8px solid #06D6A0;
+            border-bottom: 8px solid #06D6A0;
+        }
+        .book-disney-3 { 
+            background: linear-gradient(45deg, #FFD166, #FFE8A0);
+            border-top: 8px solid #FF9E6D;
+            border-bottom: 8px solid #FF9E6D;
+        }
+        .book-disney-4 { 
+            background: linear-gradient(45deg, #9D4EDD, #C77DFF);
+            border-top: 8px solid #7209B7;
+            border-bottom: 8px solid #7209B7;
+        }
+        .book-disney-5 { 
+            background: linear-gradient(45deg, #EF476F, #FF8FA3);
+            border-top: 8px solid #FF6B6B;
+            border-bottom: 8px solid #FF6B6B;
+        }
+        .book-disney-6 { 
+            background: linear-gradient(45deg, #118AB2, #5AB9D4);
+            border-top: 8px solid #073B4C;
+            border-bottom: 8px solid #073B4C;
+        }
+
+        /* Disney-узоры на книгах */
+        .disney-book::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            right: 10px;
+            height: 40px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 20px;
+            transform: translateY(-50%);
+        }
+
+        .disney-book::after {
+            content: '★';
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.8);
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Стили для главной страницы */
+        .main-page {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .main-title {
+            color: #FF8C00;
+            font-size: 3.5rem;
+            margin-bottom: 40px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+            font-weight: bold;
+            background: linear-gradient(45deg, #FF8C00, #FFA500, #FFB732);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .nav-button {
+            background: linear-gradient(135deg, #FF8C00, #FFA500);
+            color: white;
+            border: none;
+            padding: 18px 28px;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(255,140,0,0.3);
+            min-width: 200px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255,140,0,0.5);
+            background: linear-gradient(135deg, #FFA500, #FF8C00);
+        }
+
+        .nav-button::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.3), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
+        }
+
+        .nav-button:hover::before {
+            transform: rotate(45deg) translate(50%, 50%);
+        }
+
+        /* Новые кнопки специалистов */
+        .specialists-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 50px;
+        }
+
+        .specialist-button {
+            background: linear-gradient(135deg, #FF6B9D, #FF8E53);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(255,107,157,0.3);
+            min-width: 220px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .specialist-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255,107,157,0.5);
+            background: linear-gradient(135deg, #FF8E53, #FF6B9D);
+        }
+
+        /* Методическая копилка - БЕЗ РАМКИ */
+        .method-section {
+            margin: 40px 0;
+            padding: 40px;
+            background: transparent;
+        }
+
+        .method-title {
+            color: #FF8C00;
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            background: linear-gradient(45deg, #FF8C00, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .method-subtitle {
+            color: #FFA500;
+            font-size: 1.5rem;
+            margin-bottom: 35px;
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        .method-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        .method-button {
+            background: linear-gradient(135deg, #FF8C00, #FFA500);
+            color: white;
+            border: none;
+            padding: 22px 35px;
+            border-radius: 18px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(255,140,0,0.4);
+            min-width: 140px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .method-button:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 12px 35px rgba(255,140,0,0.6);
+            background: linear-gradient(135deg, #FFA500, #FF8C00);
+        }
+
+        .method-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: all 0.5s ease;
+        }
+
+        .method-button:hover::after {
+            left: 100%;
+        }
+
+        /* Стили для страницы выбора категории */
+        .category-page {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .back-button {
+            background: #FF8C00;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255,140,0,0.3);
+        }
+
+        .back-button:hover {
+            background: #FFA500;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,140,0,0.4);
+        }
+
+        .page-title {
+            color: #FF8C00;
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            background: linear-gradient(45deg, #FF8C00, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .category-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            flex-wrap: wrap;
+        }
+
+        .category-button {
+            background: linear-gradient(135deg, #FF8C00, #FFA500);
+            color: white;
+            border: none;
+            padding: 25px 35px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(255,140,0,0.3);
+            min-width: 250px;
+        }
+
+        .category-button:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 12px 30px rgba(255,140,0,0.5);
+            background: linear-gradient(135deg, #FFA500, #FF8C00);
+        }
+
+        /* Стили для страницы загрузки файлов */
+        .upload-page {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .upload-container {
+            background: linear-gradient(135deg, #FFF8E1, #FFECB3);
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 0 10px 30px rgba(255,140,0,0.2);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .upload-title {
+            color: #FF8C00;
+            font-size: 2.2rem;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #FF8C00, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: 15px;
+            margin: 20px 0;
+            border: 3px dashed #FF8C00;
+            border-radius: 12px;
+            background: #FFF8E1;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            color: #FF8C00;
+        }
+
+        .file-input:hover {
+            border-color: #FFA500;
+            background: #FFECB3;
+        }
+
+        .upload-button {
+            background: linear-gradient(135deg, #FF8C00, #FFA500);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(255,140,0,0.3);
+        }
+
+        .upload-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255,140,0,0.4);
+            background: linear-gradient(135deg, #FFA500, #FF8C00);
+        }
+
+        .file-list {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .file-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+            border-left: 6px solid #FF8C00;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(255,140,0,0.2);
+        }
+
+        .file-item:hover {
+            background: #FFF8E1;
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(255,140,0,0.3);
+        }
+
+        .delete-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #FF8C00;
+            color: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .delete-button:hover {
+            background: #FF6B6B;
+            transform: scale(1.1);
+        }
+
+        .file-info {
+            padding-right: 35px;
+        }
+
+        .file-name {
+            font-weight: bold;
+            color: #FF8C00;
+            font-size: 1.2rem;
+        }
+
+        .file-details {
+            color: #FFA500;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* Модальное окно подтверждения удаления */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 35px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(255,140,0,0.4);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: slideIn 0.3s ease;
+        }
+
+        .modal-title {
+            color: #FF8C00;
+            font-size: 1.6rem;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 25px;
+        }
+
+        .modal-button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .modal-button.no {
+            background: #FF8C00;
+            color: white;
+        }
+
+        .modal-button.no:hover {
+            background: #FFA500;
+            transform: translateY(-2px);
+        }
+
+        .modal-button.yes {
+            background: #FF6B6B;
+            color: white;
+        }
+
+        .modal-button.yes:hover {
+            background: #FF5252;
+            transform: translateY(-2px);
+        }
+
+        /* Анимации */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-20px) scale(0.9);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Левая книжная полка - ПРИЖАТА К КРАЮ -->
+    <div class="bookshelf-left">
+        <div class="disney-book book-disney-1"></div>
+        <div class="disney-book book-disney-2"></div>
+        <div class="disney-book book-disney-3"></div>
+    </div>
+    
+    <!-- Правая книжная полка -->
+    <div class="bookshelf-right">
+        <div class="disney-book book-disney-4"></div>
+        <div class="disney-book book-disney-5"></div>
+        <div class="disney-book book-disney-6"></div>
+    </div>
+
+    <div class="container">
+        <!-- Главная страница -->
+        <div id="mainPage" class="main-page fade-in">
+            <h1 class="main-title">Электронная библиотека</h1>
+            
+            <!-- Кнопки возрастных групп -->
+            <div class="nav-buttons">
+                <button class="nav-button" onclick="showCategoryPage('Ранний возраст')">Ранний возраст</button>
+                <button class="nav-button" onclick="showCategoryPage('Вторая младшая')">Вторая младшая</button>
+                <button class="nav-button" onclick="showCategoryPage('Средняя')">Средняя</button>
+                <button class="nav-button" onclick="showCategoryPage('Старшая')">Старшая</button>
+                <button class="nav-button" onclick="showCategoryPage('Подготовительная к школе')">Подготовительная к школе</button>
+            </div>
+
+            <!-- Кнопки специалистов -->
+            <div class="specialists-buttons">
+                <button class="specialist-button" onclick="showCategoryPage('Учитель-логопед')">Учитель-логопед</button>
+                <button class="specialist-button" onclick="showCategoryPage('Педагог-психолог')">Педагог-психолог</button>
+                <button class="specialist-button" onclick="showCategoryPage('Музыкальный руководитель')">Музыкальный руководитель</button>
+                <button class="specialist-button" onclick="showCategoryPage('Инструктор по физическому развитию')">Инструктор по физическому развитию</button>
+            </div>
+
+            <!-- Методическая копилка - БЕЗ РАМКИ -->
+            <div class="method-section">
+                <h2 class="method-title">Методическая копилка</h2>
+                <div class="method-subtitle">(старший воспитатель)</div>
+                <div class="method-buttons">
+                    <button class="method-button" onclick="showUploadPage('ЭСКР')">ЭСКР</button>
+                    <button class="method-button" onclick="showUploadPage('РР')">РР</button>
+                    <button class="method-button" onclick="showUploadPage('ПР')">ПР</button>
+                    <button class="method-button" onclick="showUploadPage('ХЭ')">ХЭ</button>
+                    <button class="method-button" onclick="showUploadPage('ФР')">ФР</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Страница выбора категории -->
+        <div id="categoryPage" class="category-page" style="display: none;">
+            <button class="back-button" onclick="showMainPage()">← Назад в библиотеку</button>
+            <h2 class="page-title" id="categoryTitle">Категория: </h2>
+            <div class="category-buttons">
+                <button class="category-button" onclick="showUploadPage('Конспекты занятий')">Конспекты занятий</button>
+                <button class="category-button" onclick="showUploadPage('Презентации')">Презентации</button>
+                <button class="category-button" onclick="showUploadPage('Воспитательные события (КПВР)')">Воспитательные события (КПВР)</button>
+                <button class="category-button" onclick="showUploadPage('Другое')">Другое</button>
+            </div>
+        </div>
+
+        <!-- Страница загрузки файлов -->
+        <div id="uploadPage" class="upload-page" style="display: none;">
+            <button class="back-button" onclick="showCategoryPageFromUpload()">← Назад к категории</button>
+            <div class="upload-container">
+                <h2 class="upload-title" id="uploadTitle">Загрузка файлов: </h2>
+                <input type="file" id="fileInput" class="file-input" multiple>
+                <button class="upload-button" onclick="uploadFile()">Загрузить файл</button>
+                <div class="file-list" id="fileList">
+                    <h3 style="color: #FF8C00;">Загруженные файлы:</h3>
+                    <!-- Список файлов будет появляться здесь -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения удаления -->
+    <div id="deleteModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-title">Вы действительно хотите УДАЛИТЬ файл?</div>
+            <div class="modal-buttons">
+                <button class="modal-button no" onclick="cancelDelete()">Нет</button>
+                <button class="modal-button yes" onclick="confirmDelete()">Да</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCategory = '';
+        let currentMethod = '';
+        let uploadedFiles = [];
+        let fileToDelete = null;
+        let lastCategoryPage = '';
+
+        // Показать главную страницу
+        function showMainPage() {
+            document.getElementById('mainPage').style.display = 'block';
+            document.getElementById('categoryPage').style.display = 'none';
+            document.getElementById('uploadPage').style.display = 'none';
+        }
+
+        // Показать страницу категории
+        function showCategoryPage(category) {
+            currentCategory = category;
+            lastCategoryPage = category;
+            document.getElementById('mainPage').style.display = 'none';
+            document.getElementById('categoryPage').style.display = 'block';
+            document.getElementById('uploadPage').style.display = 'none';
+            document.getElementById('categoryTitle').textContent = `Категория: ${category}`;
+        }
+
+        // Показать страницу загрузки файлов
+        function showUploadPage(method) {
+            currentMethod = method;
+            document.getElementById('mainPage').style.display = 'none';
+            document.getElementById('categoryPage').style.display = 'none';
+            document.getElementById('uploadPage').style.display = 'block';
+            document.getElementById('uploadTitle').textContent = `Загрузка файлов: ${currentCategory} - ${method}`;
+            updateFileList();
+        }
+
+        // Вернуться к категории из страницы загрузки
+        function showCategoryPageFromUpload() {
+            showCategoryPage(lastCategoryPage);
+        }
+
+        // Загрузка файла
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                alert('Пожалуйста, выберите файл для загрузки');
+                return;
+            }
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                uploadedFiles.push({
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    category: currentCategory,
+                    method: currentMethod,
+                    timestamp: new Date().toLocaleString(),
+                    url: URL.createObjectURL(file),
+                    id: Date.now() + Math.random() // Уникальный ID для удаления
+                });
+            }
+
+            updateFileList();
+            fileInput.value = '';
+            alert('Файлы успешно загружены в библиотеку!');
+        }
+
+        // Показать модальное окно подтверждения удаления
+        function showDeleteModal(fileId) {
+            fileToDelete = fileId;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        // Отмена удаления
+        function cancelDelete() {
+            document.getElementById('deleteModal').style.display = 'none';
+            fileToDelete = null;
+        }
+
+        // Подтверждение удаления
+        function confirmDelete() {
+            if (fileToDelete) {
+                const fileIndex = uploadedFiles.findIndex(file => file.id === fileToDelete);
+                if (fileIndex !== -1) {
+                    // Освобождаем URL объекта
+                    URL.revokeObjectURL(uploadedFiles[fileIndex].url);
+                    uploadedFiles.splice(fileIndex, 1);
+                    updateFileList();
+                }
+            }
+            document.getElementById('deleteModal').style.display = 'none';
+            fileToDelete = null;
+        }
+
+        // Обновление списка файлов
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            const currentFiles = uploadedFiles.filter(file => 
+                file.category === currentCategory && file.method === currentMethod
+            );
+            
+            if (currentFiles.length === 0) {
+                fileList.innerHTML = '<h3 style="color: #FF8C00;">Загруженные файлы:</h3><p style="color: #FFA500;">Пока нет загруженных файлов</p>';
+                return;
+            }
+
+            let filesHTML = '<h3 style="color: #FF8C00;">Загруженные файлы:</h3>';
+            currentFiles.forEach((file) => {
+                filesHTML += `
+                    <div class="file-item">
+                        <button class="delete-button" onclick="showDeleteModal(${file.id})">×</button>
+                        <div class="file-info" onclick="viewFile('${file.url}', '${file.name}')">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-details">
+                                Размер: ${(file.size / 1024).toFixed(2)} KB | 
+                                Загружен: ${file.timestamp}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            fileList.innerHTML = filesHTML;
+        }
+
+        // Просмотр файла
+        function viewFile(url, filename) {
+            window.open(url, '_blank');
+        }
+
+        // Закрытие модального окна при клике вне его
+        document.getElementById('deleteModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cancelDelete();
+            }
+        });
+
+        // Инициализация - показать главную страницу при загрузке
+        window.onload = showMainPage;
+    </script>
+</body>
+</html>
