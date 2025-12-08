@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Электронная библиотека</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-storage.js"></script>
     <style>
         * {
             margin: 0;
@@ -488,6 +492,41 @@
             margin-top: 5px;
         }
 
+        /* Индикатор загрузки */
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            color: #FF8C00;
+            font-size: 1.1rem;
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #FF8C00;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Сообщение об ошибке Firebase */
+        .firebase-error {
+            background: #FFEBEE;
+            border: 2px solid #FFCDD2;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #D32F2F;
+            text-align: center;
+        }
+
         /* Модальное окно подтверждения удаления */
         .modal-overlay {
             position: fixed;
@@ -582,7 +621,7 @@
     </style>
 </head>
 <body>
-    <!-- Левая книжная полка - ПРИЖАТА К КРАЮ -->
+    <!-- Левая книжная полка -->
     <div class="bookshelf-left">
         <div class="disney-book book-disney-1"></div>
         <div class="disney-book book-disney-2"></div>
@@ -618,7 +657,7 @@
                 <button class="specialist-button" onclick="showCategoryPage('Инструктор по физическому развитию')">Инструктор по физическому развитию</button>
             </div>
 
-            <!-- Методическая копилка - БЕЗ РАМКИ -->
+            <!-- Методическая копилка -->
             <div class="method-section">
                 <h2 class="method-title">Методическая копилка</h2>
                 <div class="method-subtitle">(старший воспитатель)</div>
@@ -651,9 +690,22 @@
                 <h2 class="upload-title" id="uploadTitle">Загрузка файлов: </h2>
                 <input type="file" id="fileInput" class="file-input" multiple>
                 <button class="upload-button" onclick="uploadFile()">Загрузить файл</button>
+                
+                <!-- Индикатор загрузки -->
+                <div id="loadingIndicator" class="loading-indicator">
+                    <div class="loading-spinner"></div>
+                    <p>Загрузка файлов...</p>
+                </div>
+                
+                <!-- Сообщение об ошибке Firebase -->
+                <div id="firebaseError" class="firebase-error" style="display: none;">
+                    <p><strong>⚠️ Внимание:</strong> Firebase не настроен. Файлы будут храниться только в вашем браузере.</p>
+                    <p>Для настройки постоянного хранения следуйте инструкциям в консоли (F12).</p>
+                </div>
+                
                 <div class="file-list" id="fileList">
                     <h3 style="color: #FF8C00;">Загруженные файлы:</h3>
-                    <!-- Список файлов будет появляться здесь -->
+                    <!-- Файлы будут загружаться здесь -->
                 </div>
             </div>
         </div>
@@ -671,20 +723,320 @@
     </div>
 
     <script>
+        // ==================== КОНФИГУРАЦИЯ FIREBASE ====================
+        // 🔧 ЗАМЕНИТЕ ЭТИ ДАННЫЕ НА ВАШИ С КОНСОЛИ FIREBASE!
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            authDomain: "your-project-id.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project-id.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdef1234567890"
+        };
+
+        // Глобальные переменные Firebase
+        let db = null;
+        let storage = null;
+        let firebaseInitialized = false;
+
+        // ==================== ИНИЦИАЛИЗАЦИЯ FIREBASE ====================
+        function initializeFirebase() {
+            try {
+                // Проверяем, не инициализирован ли Firebase уже
+                if (firebase.apps.length === 0) {
+                    firebase.initializeApp(firebaseConfig);
+                    console.log("✅ Firebase успешно инициализирован");
+                }
+                
+                // Инициализируем сервисы
+                db = firebase.firestore();
+                storage = firebase.storage();
+                firebaseInitialized = true;
+                
+                // Скрываем сообщение об ошибке
+                document.getElementById('firebaseError').style.display = 'none';
+                
+                console.log("✅ Firestore и Storage инициализированы");
+                return true;
+            } catch (error) {
+                console.error("❌ Ошибка инициализации Firebase:", error);
+                
+                // Показываем сообщение об ошибке
+                document.getElementById('firebaseError').style.display = 'block';
+                
+                // Используем LocalStorage как запасной вариант
+                initializeLocalStorage();
+                return false;
+            }
+        }
+
+        // ==================== ЗАПАСНОЙ ВАРИАНТ: LOCALSTORAGE ====================
+        let localStorageFiles = {};
+
+        function initializeLocalStorage() {
+            // Загружаем файлы из LocalStorage
+            const savedFiles = localStorage.getItem('libraryFiles');
+            if (savedFiles) {
+                localStorageFiles = JSON.parse(savedFiles);
+            }
+            console.log("📁 LocalStorage загружен:", Object.keys(localStorageFiles).length, "файлов");
+        }
+
+        // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
         let currentCategory = '';
         let currentMethod = '';
-        let uploadedFiles = [];
-        let fileToDelete = null;
         let lastCategoryPage = '';
+        let fileToDeleteId = '';
+        let fileToDeleteName = '';
 
-        // Показать главную страницу
+        // ==================== ФУНКЦИИ ДЛЯ РАБОТЫ С FIREBASE ====================
+
+        // Показать/скрыть индикатор загрузки
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+        }
+
+        // Загрузка файла
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                alert('Пожалуйста, выберите файл для загрузки');
+                return;
+            }
+
+            showLoading(true);
+
+            // Проверяем, инициализирован ли Firebase
+            if (!firebaseInitialized) {
+                if (!initializeFirebase()) {
+                    // Используем LocalStorage
+                    for (let i = 0; i < files.length; i++) {
+                        await uploadToLocalStorage(files[i]);
+                    }
+                    showLoading(false);
+                    fileInput.value = '';
+                    alert('Файлы сохранены в LocalStorage (только в вашем браузере)');
+                    updateFileList();
+                    return;
+                }
+            }
+
+            try {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    
+                    // Создаем уникальное имя файла
+                    const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                    const filePath = `files/${currentCategory}/${currentMethod}/${fileName}`;
+                    
+                    // Загружаем файл в Storage
+                    const storageRef = storage.ref(filePath);
+                    await storageRef.put(file);
+                    
+                    // Получаем URL для скачивания
+                    const downloadURL = await storageRef.getDownloadURL();
+                    
+                    // Сохраняем информацию в Firestore
+                    await db.collection('library_files').add({
+                        originalName: file.name,
+                        fileName: fileName,
+                        downloadURL: downloadURL,
+                        category: currentCategory,
+                        method: currentMethod,
+                        size: file.size,
+                        type: file.type,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        uploadDate: new Date().toLocaleString('ru-RU')
+                    });
+                    
+                    console.log(`✅ Файл загружен: ${file.name}`);
+                }
+                
+                showLoading(false);
+                fileInput.value = '';
+                alert('✅ Файлы успешно загружены на сервер!');
+                updateFileList();
+                
+            } catch (error) {
+                showLoading(false);
+                console.error('❌ Ошибка загрузки файла:', error);
+                
+                // Пробуем сохранить в LocalStorage как запасной вариант
+                for (let i = 0; i < files.length; i++) {
+                    await uploadToLocalStorage(files[i]);
+                }
+                
+                alert('⚠️ Файлы сохранены локально (Firebase недоступен)');
+                updateFileList();
+            }
+        }
+
+        // Загрузка в LocalStorage (запасной вариант)
+        async function uploadToLocalStorage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const fileId = `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    localStorageFiles[fileId] = {
+                        id: fileId,
+                        originalName: file.name,
+                        content: e.target.result,
+                        category: currentCategory,
+                        method: currentMethod,
+                        size: file.size,
+                        type: file.type,
+                        uploadDate: new Date().toLocaleString('ru-RU'),
+                        isLocal: true
+                    };
+                    
+                    // Сохраняем в LocalStorage
+                    localStorage.setItem('libraryFiles', JSON.stringify(localStorageFiles));
+                    resolve();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Получение списка файлов
+        async function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            showLoading(true);
+
+            try {
+                let files = [];
+
+                // Пробуем получить файлы из Firebase
+                if (firebaseInitialized && db) {
+                    try {
+                        const snapshot = await db.collection('library_files')
+                            .where('category', '==', currentCategory)
+                            .where('method', '==', currentMethod)
+                            .orderBy('timestamp', 'desc')
+                            .get();
+
+                        snapshot.forEach(doc => {
+                            files.push({
+                                id: doc.id,
+                                ...doc.data(),
+                                isFirebase: true
+                            });
+                        });
+                    } catch (firebaseError) {
+                        console.warn('Не удалось загрузить из Firebase:', firebaseError);
+                    }
+                }
+
+                // Добавляем файлы из LocalStorage
+                const localFiles = Object.values(localStorageFiles).filter(file => 
+                    file.category === currentCategory && file.method === currentMethod
+                );
+                
+                files = [...files, ...localFiles];
+                
+                // Сортируем по дате загрузки
+                files.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
+
+                if (files.length === 0) {
+                    fileList.innerHTML = `
+                        <h3 style="color: #FF8C00;">Загруженные файлы:</h3>
+                        <p style="color: #FFA500;">Пока нет загруженных файлов</p>
+                        ${!firebaseInitialized ? '<p style="color: #E74C3C; font-size: 0.9rem; margin-top: 10px;">⚠️ Firebase не настроен. Настройте Firebase для общего доступа к файлам.</p>' : ''}
+                    `;
+                    showLoading(false);
+                    return;
+                }
+
+                let filesHTML = '<h3 style="color: #FF8C00;">Загруженные файлы:</h3>';
+                
+                files.forEach(file => {
+                    const isLocal = file.isLocal || !file.isFirebase;
+                    const sourceBadge = isLocal ? 
+                        '<span style="background: #FFA500; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; margin-left: 5px;">локально</span>' : 
+                        '<span style="background: #27AE60; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; margin-left: 5px;">сервер</span>';
+                    
+                    filesHTML += `
+                        <div class="file-item">
+                            <button class="delete-button" onclick="showDeleteModal('${file.id}', '${file.fileName || file.id}', ${isLocal})">×</button>
+                            <div class="file-info" onclick="viewFile('${file.downloadURL || file.content}', '${file.originalName}', ${isLocal})">
+                                <div class="file-name">${file.originalName} ${sourceBadge}</div>
+                                <div class="file-details">
+                                    Размер: ${(file.size / 1024).toFixed(2)} KB | 
+                                    Загружен: ${file.uploadDate}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                fileList.innerHTML = filesHTML;
+                showLoading(false);
+                
+            } catch (error) {
+                console.error('❌ Ошибка получения файлов:', error);
+                fileList.innerHTML = `
+                    <h3 style="color: #FF8C00;">Загруженные файлы:</h3>
+                    <p style="color: #E74C3C;">Ошибка загрузки списка файлов</p>
+                `;
+                showLoading(false);
+            }
+        }
+
+        // Удаление файла
+        async function deleteFile(fileId, fileName, isLocal = false) {
+            if (isLocal) {
+                // Удаляем из LocalStorage
+                delete localStorageFiles[fileId];
+                localStorage.setItem('libraryFiles', JSON.stringify(localStorageFiles));
+                alert('Файл удален из локального хранилища');
+            } else if (firebaseInitialized && db && storage) {
+                try {
+                    // Удаляем из Firestore
+                    await db.collection('library_files').doc(fileId).delete();
+                    
+                    // Удаляем из Storage
+                    if (fileName) {
+                        const storageRef = storage.ref(`files/${currentCategory}/${currentMethod}/${fileName}`);
+                        await storageRef.delete();
+                    }
+                    
+                    alert('✅ Файл успешно удален с сервера');
+                } catch (error) {
+                    console.error('❌ Ошибка удаления файла:', error);
+                    alert('❌ Ошибка при удалении файла');
+                    return;
+                }
+            } else {
+                alert('⚠️ Не удалось удалить файл. Проверьте подключение.');
+            }
+            
+            updateFileList();
+        }
+
+        // Просмотр файла
+        function viewFile(url, filename, isLocal = false) {
+            if (isLocal) {
+                // Для LocalStorage: data URL
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.click();
+            } else {
+                // Для Firebase: прямая ссылка
+                window.open(url, '_blank');
+            }
+        }
+
+        // ==================== ФУНКЦИИ НАВИГАЦИИ ====================
+        
         function showMainPage() {
             document.getElementById('mainPage').style.display = 'block';
             document.getElementById('categoryPage').style.display = 'none';
             document.getElementById('uploadPage').style.display = 'none';
         }
 
-        // Показать страницу категории
         function showCategoryPage(category) {
             currentCategory = category;
             lastCategoryPage = category;
@@ -694,7 +1046,6 @@
             document.getElementById('categoryTitle').textContent = `Категория: ${category}`;
         }
 
-        // Показать страницу загрузки файлов
         function showUploadPage(method) {
             currentMethod = method;
             document.getElementById('mainPage').style.display = 'none';
@@ -704,102 +1055,64 @@
             updateFileList();
         }
 
-        // Вернуться к категории из страницы загрузки
         function showCategoryPageFromUpload() {
             showCategoryPage(lastCategoryPage);
         }
 
-        // Загрузка файла
-        function uploadFile() {
-            const fileInput = document.getElementById('fileInput');
-            const files = fileInput.files;
-            
-            if (files.length === 0) {
-                alert('Пожалуйста, выберите файл для загрузки');
-                return;
-            }
+        // ==================== МОДАЛЬНОЕ ОКНО УДАЛЕНИЯ ====================
+        
+        let deleteIsLocal = false;
 
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                uploadedFiles.push({
-                    name: file.name,
-                    type: file.type,
-                    size: file.size,
-                    category: currentCategory,
-                    method: currentMethod,
-                    timestamp: new Date().toLocaleString(),
-                    url: URL.createObjectURL(file),
-                    id: Date.now() + Math.random() // Уникальный ID для удаления
-                });
-            }
-
-            updateFileList();
-            fileInput.value = '';
-            alert('Файлы успешно загружены в библиотеку!');
-        }
-
-        // Показать модальное окно подтверждения удаления
-        function showDeleteModal(fileId) {
-            fileToDelete = fileId;
+        function showDeleteModal(fileId, fileName, isLocal = false) {
+            fileToDeleteId = fileId;
+            fileToDeleteName = fileName;
+            deleteIsLocal = isLocal;
             document.getElementById('deleteModal').style.display = 'flex';
         }
 
-        // Отмена удаления
         function cancelDelete() {
             document.getElementById('deleteModal').style.display = 'none';
-            fileToDelete = null;
+            fileToDeleteId = '';
+            fileToDeleteName = '';
         }
 
-        // Подтверждение удаления
-        function confirmDelete() {
-            if (fileToDelete) {
-                const fileIndex = uploadedFiles.findIndex(file => file.id === fileToDelete);
-                if (fileIndex !== -1) {
-                    // Освобождаем URL объекта
-                    URL.revokeObjectURL(uploadedFiles[fileIndex].url);
-                    uploadedFiles.splice(fileIndex, 1);
-                    updateFileList();
-                }
-            }
+        async function confirmDelete() {
+            await deleteFile(fileToDeleteId, fileToDeleteName, deleteIsLocal);
             document.getElementById('deleteModal').style.display = 'none';
-            fileToDelete = null;
+            fileToDeleteId = '';
+            fileToDeleteName = '';
         }
 
-        // Обновление списка файлов
-        function updateFileList() {
-            const fileList = document.getElementById('fileList');
-            const currentFiles = uploadedFiles.filter(file => 
-                file.category === currentCategory && file.method === currentMethod
-            );
+        // ==================== ИНИЦИАЛИЗАЦИЯ ПРИ ЗАГРУЗКЕ ====================
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Инициализируем Firebase
+            initializeFirebase();
             
-            if (currentFiles.length === 0) {
-                fileList.innerHTML = '<h3 style="color: #FF8C00;">Загруженные файлы:</h3><p style="color: #FFA500;">Пока нет загруженных файлов</p>';
-                return;
-            }
-
-            let filesHTML = '<h3 style="color: #FF8C00;">Загруженные файлы:</h3>';
-            currentFiles.forEach((file) => {
-                filesHTML += `
-                    <div class="file-item">
-                        <button class="delete-button" onclick="showDeleteModal(${file.id})">×</button>
-                        <div class="file-info" onclick="viewFile('${file.url}', '${file.name}')">
-                            <div class="file-name">${file.name}</div>
-                            <div class="file-details">
-                                Размер: ${(file.size / 1024).toFixed(2)} KB | 
-                                Загружен: ${file.timestamp}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
+            // Показываем главную страницу
+            showMainPage();
             
-            fileList.innerHTML = filesHTML;
-        }
+            // Выводим инструкцию в консоль
+            console.log(`
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-        // Просмотр файла
-        function viewFile(url, filename) {
-            window.open(url, '_blank');
-        }
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDMX6JUT7Pe71NUmMmBTVC5gUI_3M1Jo-c",
+  authDomain: "electronic-library-fc7e2.firebaseapp.com",
+  projectId: "electronic-library-fc7e2",
+  storageBucket: "electronic-library-fc7e2.firebasestorage.app",
+  messagingSenderId: "996667755000",
+  appId: "1:996667755000:web:38c3ccf24de1cbff022e0d"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+            `);
+        });
 
         // Закрытие модального окна при клике вне его
         document.getElementById('deleteModal').addEventListener('click', function(e) {
@@ -807,9 +1120,6 @@
                 cancelDelete();
             }
         });
-
-        // Инициализация - показать главную страницу при загрузке
-        window.onload = showMainPage;
     </script>
 </body>
 </html>
