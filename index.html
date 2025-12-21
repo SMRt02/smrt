@@ -647,19 +647,19 @@
             
             <!-- Кнопки возрастных групп -->
             <div class="nav-buttons">
-                <button class="nav-button" onclick="showCategoryPage('Ранний возраст')">Ранний возраст</button>
-                <button class="nav-button" onclick="showCategoryPage('Вторая младшая')">Вторая младшая</button>
-                <button class="nav-button" onclick="showCategoryPage('Средняя')">Средняя</button>
-                <button class="nav-button" onclick="showCategoryPage('Старшая')">Старшая</button>
-                <button class="nav-button" onclick="showCategoryPage('Подготовительная к школе')">Подготовительная к школе</button>
+                <button class="nav-button" onclick="window.showCategoryPage('Ранний возраст')">Ранний возраст</button>
+                <button class="nav-button" onclick="window.showCategoryPage('Вторая младшая')">Вторая младшая</button>
+                <button class="nav-button" onclick="window.showCategoryPage('Средняя')">Средняя</button>
+                <button class="nav-button" onclick="window.showCategoryPage('Старшая')">Старшая</button>
+                <button class="nav-button" onclick="window.showCategoryPage('Подготовительная к школе')">Подготовительная к школе</button>
             </div>
 
             <!-- Кнопки специалистов -->
             <div class="specialists-buttons">
-                <button class="specialist-button" onclick="showCategoryPage('Учитель-логопед')">Учитель-логопед</button>
-                <button class="specialist-button" onclick="showCategoryPage('Педагог-психолог')">Педагог-психолог</button>
-                <button class="specialist-button" onclick="showCategoryPage('Музыкальный руководитель')">Музыкальный руководитель</button>
-                <button class="specialist-button" onclick="showCategoryPage('Инструктор по физическому развитию')">Инструктор по физическому развитию</button>
+                <button class="specialist-button" onclick="window.showCategoryPage('Учитель-логопед')">Учитель-логопед</button>
+                <button class="specialist-button" onclick="window.showCategoryPage('Педагог-психолог')">Педагог-психолог</button>
+                <button class="specialist-button" onclick="window.showCategoryPage('Музыкальный руководитель')">Музыкальный руководитель</button>
+                <button class="specialist-button" onclick="window.showCategoryPage('Инструктор по физическому развитию')">Инструктор по физическому развитию</button>
             </div>
 
             <!-- Методическая копилка -->
@@ -667,30 +667,30 @@
                 <h2 class="method-title">Методическая копилка</h2>
                 <div class="method-subtitle">(старший воспитатель)</div>
                 <div class="method-buttons">
-                    <button class="method-button" onclick="showUploadPage('ЭСКР', true)">ЭСКР</button>
-                    <button class="method-button" onclick="showUploadPage('РР', true)">РР</button>
-                    <button class="method-button" onclick="showUploadPage('ПР', true)">ПР</button>
-                    <button class="method-button" onclick="showUploadPage('ХЭ', true)">ХЭ</button>
-                    <button class="method-button" onclick="showUploadPage('ФР', true)">ФР</button>
+                    <button class="method-button" onclick="window.showUploadPage('ЭСКР', true)">ЭСКР</button>
+                    <button class="method-button" onclick="window.showUploadPage('РР', true)">РР</button>
+                    <button class="method-button" onclick="window.showUploadPage('ПР', true)">ПР</button>
+                    <button class="method-button" onclick="window.showUploadPage('ХЭ', true)">ХЭ</button>
+                    <button class="method-button" onclick="window.showUploadPage('ФР', true)">ФР</button>
                 </div>
             </div>
         </div>
 
         <!-- Страница выбора категории -->
         <div id="categoryPage" class="category-page" style="display: none;">
-            <button class="back-button" onclick="showMainPage()">← Назад в библиотеку</button>
+            <button class="back-button" onclick="window.showMainPage()">← Назад в библиотеку</button>
             <h2 class="page-title" id="categoryTitle">Категория: </h2>
             <div class="category-buttons">
-                <button class="category-button" onclick="showUploadPage('Конспекты занятий')">Конспекты занятий</button>
-                <button class="category-button" onclick="showUploadPage('Презентации')">Презентации</button>
-                <button class="category-button" onclick="showUploadPage('Воспитательные события (КПВР)')">Воспитательные события (КПВР)</button>
-                <button class="category-button" onclick="showUploadPage('Другое')">Другое</button>
+                <button class="category-button" onclick="window.showUploadPage('Конспекты занятий')">Конспекты занятий</button>
+                <button class="category-button" onclick="window.showUploadPage('Презентации')">Презентации</button>
+                <button class="category-button" onclick="window.showUploadPage('Воспитательные события (КПВР)')">Воспитательные события (КПВР)</button>
+                <button class="category-button" onclick="window.showUploadPage('Другое')">Другое</button>
             </div>
         </div>
 
         <!-- Страница загрузки файлов -->
         <div id="uploadPage" class="upload-page" style="display: none;">
-            <button class="back-button" onclick="goBackFromUpload()">← Назад</button>
+            <button class="back-button" onclick="window.goBackFromUpload()">← Назад</button>
             <div class="upload-container">
                 <h2 class="upload-title" id="uploadTitle">Загрузка файлов: </h2>
                 
@@ -706,7 +706,7 @@
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
                 
-                <button class="upload-button" onclick="uploadFile()" id="uploadBtn">📤 Загрузить файл для всех</button>
+                <button class="upload-button" onclick="window.uploadFile()" id="uploadBtn">📤 Загрузить файл для всех</button>
                 
                 <div class="file-list" id="fileList">
                     <h3 style="color: #FF8C00;">Все файлы (видны всем):</h3>
@@ -721,8 +721,8 @@
         <div class="modal-content">
             <div class="modal-title">Вы действительно хотите УДАЛИТЬ файл?</div>
             <div class="modal-buttons">
-                <button class="modal-button no" onclick="cancelDelete()">Нет</button>
-                <button class="modal-button yes" onclick="confirmDelete()">Да</button>
+                <button class="modal-button no" onclick="window.cancelDelete()">Нет</button>
+                <button class="modal-button yes" onclick="window.confirmDelete()">Да</button>
             </div>
         </div>
     </div>
@@ -749,7 +749,7 @@
         // ==================== НАВИГАЦИЯ ====================
         
         // Показать главную страницу
-        function showMainPage() {
+        window.showMainPage = function() {
             document.getElementById('mainPage').style.display = 'block';
             document.getElementById('categoryPage').style.display = 'none';
             document.getElementById('uploadPage').style.display = 'none';
@@ -759,7 +759,7 @@
         }
         
         // Показать страницу категории (для возрастных групп и специалистов)
-        function showCategoryPage(category) {
+        window.showCategoryPage = function(category) {
             currentCategory = category;
             lastCategoryPage = category;
             isFromMethodical = false;
@@ -770,7 +770,7 @@
         }
         
         // Показать страницу загрузки файлов
-        function showUploadPage(method, fromMethodical = false) {
+        window.showUploadPage = function(method, fromMethodical = false) {
             currentMethod = method;
             isFromMethodical = fromMethodical;
             
@@ -792,27 +792,27 @@
             }
             
             document.getElementById('uploadTitle').textContent = title;
-            loadFiles();
+            window.loadFiles();
         }
         
         // Вернуться назад из страницы загрузки
-        function goBackFromUpload() {
+        window.goBackFromUpload = function() {
             if (isFromMethodical) {
                 // Если были в методической копилке - вернуться на главную
-                showMainPage();
+                window.showMainPage();
             } else if (currentCategory) {
                 // Если были в категории - вернуться к категории
-                showCategoryPage(currentCategory);
+                window.showCategoryPage(currentCategory);
             } else {
                 // На всякий случай - на главную
-                showMainPage();
+                window.showMainPage();
             }
         }
         
         // ==================== РАБОТА С FILES ====================
         
         // Загрузка файла в Supabase
-        async function uploadFile() {
+        window.uploadFile = async function() {
             const fileInput = document.getElementById('fileInput');
             const fileNameInput = document.getElementById('fileName');
             const uploadBtn = document.getElementById('uploadBtn');
@@ -907,7 +907,7 @@
                     progressFill.style.width = '0%';
                     
                     alert('✅ Файл успешно загружен для всех пользователей!');
-                    loadFiles();
+                    window.loadFiles();
                 }, 500);
                 
             } catch (error) {
@@ -924,7 +924,7 @@
         }
         
         // Загрузка списка файлов
-        async function loadFiles() {
+        window.loadFiles = async function() {
             const fileList = document.getElementById('fileList');
             fileList.innerHTML = '<h3 style="color: #FF8C00;">Все файлы (видны всем):</h3><p style="color: #FFA500;">Загрузка...</p>';
             
@@ -973,13 +973,13 @@
                 files.forEach(file => {
                     const fileSize = (file.file_size / 1024 / 1024).toFixed(2);
                     const uploadDate = new Date(file.uploaded_at).toLocaleString('ru-RU');
-                    const badgeClass = getBadgeClass(file.subcategory || file.category);
+                    const badgeClass = window.getBadgeClass(file.subcategory || file.category);
                     const badgeText = file.subcategory || file.category;
                     
                     filesHTML += `
                         <div class="file-item">
-                            <button class="delete-button" onclick="showDeleteModal('${file.id}', '${file.file_path}')">×</button>
-                            <div class="file-info" onclick="viewFile('${file.file_url}', '${file.original_name}')">
+                            <button class="delete-button" onclick="window.showDeleteModal('${file.id}', '${file.file_path}')">×</button>
+                            <div class="file-info" onclick="window.viewFile('${file.file_url}', '${file.original_name}')">
                                 <div class="file-name">
                                     ${file.name}
                                     <span class="category-badge ${badgeClass}">${badgeText}</span>
@@ -988,7 +988,7 @@
                                     📦 ${fileSize} MB | 📅 ${uploadDate} | 📄 ${file.original_name}
                                 </div>
                                 <div style="margin-top: 10px;">
-                                    <button onclick="event.stopPropagation(); downloadFile('${file.file_url}', '${file.original_name}')" 
+                                    <button onclick="event.stopPropagation(); window.downloadFile('${file.file_url}', '${file.original_name}')" 
                                             style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-right: 10px;">
                                         ⬇️ Скачать
                                     </button>
@@ -1016,7 +1016,7 @@
         }
         
         // Получить класс для бейджа категории
-        function getBadgeClass(category) {
+        window.getBadgeClass = function(category) {
             switch(category) {
                 case 'ЭСКР': return 'badge-esc';
                 case 'РР': return 'badge-rr';
@@ -1032,12 +1032,12 @@
         }
         
         // Просмотр файла
-        function viewFile(url, filename) {
+        window.viewFile = function(url, filename) {
             window.open(url, '_blank');
         }
         
         // Скачивание файла
-        function downloadFile(url, filename) {
+        window.downloadFile = function(url, filename) {
             const link = document.createElement('a');
             link.href = url;
             link.download = filename;
@@ -1047,19 +1047,19 @@
         }
         
         // Показать модальное окно удаления
-        function showDeleteModal(fileId, filePath) {
+        window.showDeleteModal = function(fileId, filePath) {
             fileToDelete = { id: fileId, path: filePath };
             document.getElementById('deleteModal').style.display = 'flex';
         }
         
         // Отмена удаления
-        function cancelDelete() {
+        window.cancelDelete = function() {
             document.getElementById('deleteModal').style.display = 'none';
             fileToDelete = null;
         }
         
         // Подтверждение удаления
-        async function confirmDelete() {
+        window.confirmDelete = async function() {
             if (!fileToDelete) return;
             
             try {
@@ -1079,13 +1079,13 @@
                 if (storageError) throw storageError;
                 
                 alert('✅ Файл удален для всех пользователей');
-                loadFiles();
+                window.loadFiles();
                 
             } catch (error) {
                 console.error('Ошибка удаления:', error);
                 alert(`❌ Ошибка удаления: ${error.message}`);
             } finally {
-                cancelDelete();
+                window.cancelDelete();
             }
         }
         
@@ -1103,7 +1103,7 @@
                         console.log('Изменение в базе данных:', payload);
                         // Обновляем список файлов если мы на странице загрузки
                         if (document.getElementById('uploadPage').style.display !== 'none') {
-                            loadFiles();
+                            window.loadFiles();
                         }
                     }
                 )
@@ -1114,7 +1114,7 @@
         
         document.addEventListener('DOMContentLoaded', function() {
             // Начинаем с главной страницы
-            showMainPage();
+            window.showMainPage();
             
             // Включаем обновления в реальном времени
             setupRealtimeUpdates();
@@ -1125,14 +1125,14 @@
             // Закрытие модального окна при клике вне его
             document.getElementById('deleteModal').addEventListener('click', function(e) {
                 if (e.target === this) {
-                    cancelDelete();
+                    window.cancelDelete();
                 }
             });
             
             // Обновляем список файлов каждые 30 секунд (на всякий случай)
             setInterval(() => {
                 if (document.getElementById('uploadPage').style.display !== 'none') {
-                    loadFiles();
+                    window.loadFiles();
                 }
             }, 30000);
         });
