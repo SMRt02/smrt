@@ -837,22 +837,30 @@
                 progressBar.style.display = 'block';
                 progressFill.style.width = '10%';
                 
-                // 1. Создаем уникальное имя файла
+                // 1. Создаем безопасное имя файла (убираем спецсимволы)
                 const timestamp = Date.now();
                 const randomString = Math.random().toString(36).substring(2, 10);
-                const fileExtension = file.name.split('.').pop();
-                const fileName = `${currentMethod}_${timestamp}_${randomString}.${fileExtension}`;
-                const filePath = `${currentMethod}/${fileName}`;
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                
+                // Очищаем имя метода от спецсимволов
+                const safeMethod = currentMethod.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_');
+                
+                // Создаем имя файла без косой черты в начале
+                const fileName = `${safeMethod}_${timestamp}_${randomString}.${fileExtension}`;
+                const filePath = fileName; // Только имя файла, без папки
                 
                 // 2. Загружаем файл в Supabase Storage
-                console.log('Загрузка файла:', file.name);
+                console.log('Загрузка файла:', file.name, 'в путь:', filePath);
                 progressFill.style.width = '30%';
                 
                 const { data: uploadData, error: uploadError } = await supabaseClient.storage
                     .from('library-files')
                     .upload(filePath, file);
                 
-                if (uploadError) throw uploadError;
+                if (uploadError) {
+                    console.error('Ошибка загрузки в Storage:', uploadError);
+                    throw uploadError;
+                }
                 
                 // 3. Получаем публичную ссылку
                 progressFill.style.width = '60%';
@@ -885,11 +893,15 @@
                     fileData.subcategory = currentMethod;
                 }
                 
+                console.log('Сохранение в базу данных:', fileData);
                 const { error: dbError } = await supabaseClient
                     .from('files')
                     .insert([fileData]);
                 
-                if (dbError) throw dbError;
+                if (dbError) {
+                    console.error('Ошибка сохранения в базу данных:', dbError);
+                    throw dbError;
+                }
                 
                 // 5. Завершаем загрузку
                 progressFill.style.width = '100%';
@@ -916,7 +928,16 @@
                 progressBar.style.display = 'none';
                 progressFill.style.width = '0%';
                 
-                alert(`❌ Ошибка загрузки: ${error.message}`);
+                let errorMessage = '❌ Ошибка загрузки';
+                if (error.message.includes('Invalid key')) {
+                    errorMessage = '❌ Ошибка: неверное имя файла. Попробуйте переименовать файл (убрать спецсимволы)';
+                } else if (error.message.includes('Bucket not found')) {
+                    errorMessage = '❌ Ошибка: бакет "library-files" не найден. Создайте его в Supabase Storage';
+                } else {
+                    errorMessage = `❌ Ошибка загрузки: ${error.message}`;
+                }
+                
+                alert(errorMessage);
             }
         }
         
@@ -1006,7 +1027,7 @@
                 fileList.innerHTML = `
                     <h3 style="color: #FF8C00;">Все файлы (видны всем):</h3>
                     <p style="color: #FFA500; text-align: center; padding: 20px;">
-                        Ошибка загрузки файлов. Проверьте подключение к интернету.
+                        Ошибка загрузки файлов: ${error.message || 'Проверьте подключение к интернету.'}
                     </p>
                 `;
             }
@@ -1107,22 +1128,50 @@
                 .subscribe();
         }
         
+        // Проверка и создание таблицы если необходимо
+        async function checkAndSetupDatabase() {
+            try {
+                // Проверяем существование таблицы files
+                const { data, error } = await supabaseClient
+                    .from('files')
+                    .select('*')
+                    .limit(1);
+                
+                if (error) {
+                    console.log('Таблица files не найдена или есть ошибка:', error);
+                    // Здесь можно добавить логику для создания таблицы через API
+                    // Но лучше создать таблицу вручную в Supabase Dashboard
+                } else {
+                    console.log('Таблица files существует, записей:', data ? data.length : 0);
+                }
+            } catch (error) {
+                console.error('Ошибка проверки базы данных:', error);
+            }
+        }
+        
         // ==================== ИНИЦИАЛИЗАЦИЯ ====================
         
         document.addEventListener('DOMContentLoaded', function() {
             // Инициализируем Supabase только один раз
             if (!supabaseClient && window.supabase) {
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                console.log('Supabase инициализирован');
+                try {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                    console.log('Supabase инициализирован');
+                    
+                    // Проверяем подключение
+                    checkAndSetupDatabase();
+                    
+                    // Включаем обновления в реальном времени
+                    setupRealtimeUpdates();
+                    
+                } catch (error) {
+                    console.error('Ошибка инициализации Supabase:', error);
+                    alert('Ошибка подключения к базе данных. Проверьте URL и ключ Supabase.');
+                }
             }
             
             // Начинаем с главной страницы
             showMainPage();
-            
-            // Включаем обновления в реальном времени
-            if (supabaseClient) {
-                setupRealtimeUpdates();
-            }
             
             // Закрытие модального окна при клике вне его
             document.getElementById('deleteModal').addEventListener('click', function(e) {
