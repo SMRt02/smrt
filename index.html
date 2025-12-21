@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Электронная библиотека</title>
     <style>
+        /* ВСЕ СТИЛИ ОСТАЮТСЯ ТАКИМИ ЖЕ КАК В ПРЕДЫДУЩЕМ КОДЕ */
         * {
             margin: 0;
             padding: 0;
@@ -666,11 +667,11 @@
                 <h2 class="method-title">Методическая копилка</h2>
                 <div class="method-subtitle">(старший воспитатель)</div>
                 <div class="method-buttons">
-                    <button class="method-button" onclick="showUploadPage('ЭСКР')">ЭСКР</button>
-                    <button class="method-button" onclick="showUploadPage('РР')">РР</button>
-                    <button class="method-button" onclick="showUploadPage('ПР')">ПР</button>
-                    <button class="method-button" onclick="showUploadPage('ХЭ')">ХЭ</button>
-                    <button class="method-button" onclick="showUploadPage('ФР')">ФР</button>
+                    <button class="method-button" onclick="showUploadPage('ЭСКР', true)">ЭСКР</button>
+                    <button class="method-button" onclick="showUploadPage('РР', true)">РР</button>
+                    <button class="method-button" onclick="showUploadPage('ПР', true)">ПР</button>
+                    <button class="method-button" onclick="showUploadPage('ХЭ', true)">ХЭ</button>
+                    <button class="method-button" onclick="showUploadPage('ФР', true)">ФР</button>
                 </div>
             </div>
         </div>
@@ -689,7 +690,7 @@
 
         <!-- Страница загрузки файлов -->
         <div id="uploadPage" class="upload-page" style="display: none;">
-            <button class="back-button" onclick="showCategoryPageFromUpload()">← Назад к категории</button>
+            <button class="back-button" onclick="goBackFromUpload()">← Назад</button>
             <div class="upload-container">
                 <h2 class="upload-title" id="uploadTitle">Загрузка файлов: </h2>
                 
@@ -732,8 +733,8 @@
     <script>
         // ==================== КОНФИГУРАЦИЯ SUPABASE ====================
         // ⚠️ ЗАМЕНИ ЭТИ ДАННЫЕ НА СВОИ!
-        const SUPABASE_URL = 'https://lytmvlhzlodjumpdxvzv.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_KBNpRCOOanMGpaxAzFdq5w_FpOZvnSx';
+        const SUPABASE_URL = 'https://ВАШ-ПРОЕКТ.supabase.co';
+        const SUPABASE_KEY = 'ВАШ-ANON-PUBLIC-KEY';
         
         // Инициализация Supabase
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -743,6 +744,7 @@
         let currentMethod = '';
         let fileToDelete = null;
         let lastCategoryPage = '';
+        let isFromMethodical = false; // Флаг: из методической копилки или нет
         
         // ==================== НАВИГАЦИЯ ====================
         
@@ -751,12 +753,16 @@
             document.getElementById('mainPage').style.display = 'block';
             document.getElementById('categoryPage').style.display = 'none';
             document.getElementById('uploadPage').style.display = 'none';
+            currentCategory = '';
+            currentMethod = '';
+            isFromMethodical = false;
         }
         
         // Показать страницу категории (для возрастных групп и специалистов)
         function showCategoryPage(category) {
             currentCategory = category;
             lastCategoryPage = category;
+            isFromMethodical = false;
             document.getElementById('mainPage').style.display = 'none';
             document.getElementById('categoryPage').style.display = 'block';
             document.getElementById('uploadPage').style.display = 'none';
@@ -764,28 +770,41 @@
         }
         
         // Показать страницу загрузки файлов
-        function showUploadPage(method) {
+        function showUploadPage(method, fromMethodical = false) {
             currentMethod = method;
+            isFromMethodical = fromMethodical;
+            
+            // Скрываем все страницы
             document.getElementById('mainPage').style.display = 'none';
             document.getElementById('categoryPage').style.display = 'none';
             document.getElementById('uploadPage').style.display = 'block';
             
-            // Если есть текущая категория (возрастная группа или специалист), показываем её
-            if (currentCategory) {
-                document.getElementById('uploadTitle').textContent = `Загрузка файлов: ${currentCategory} - ${method}`;
+            // Формируем заголовок
+            let title = '';
+            if (isFromMethodical) {
+                // Если из методической копилки
+                title = `Загрузка файлов: ${method}`;
+            } else if (currentCategory) {
+                // Если из категории (возрастная группа или специалист)
+                title = `Загрузка файлов: ${currentCategory} - ${method}`;
             } else {
-                // Если это методическая копилка (без категории)
-                document.getElementById('uploadTitle').textContent = `Загрузка файлов: ${method}`;
+                title = `Загрузка файлов: ${method}`;
             }
             
+            document.getElementById('uploadTitle').textContent = title;
             loadFiles();
         }
         
-        // Вернуться к категории из страницы загрузки
-        function showCategoryPageFromUpload() {
-            if (lastCategoryPage) {
-                showCategoryPage(lastCategoryPage);
+        // Вернуться назад из страницы загрузки
+        function goBackFromUpload() {
+            if (isFromMethodical) {
+                // Если были в методической копилке - вернуться на главную
+                showMainPage();
+            } else if (currentCategory) {
+                // Если были в категории - вернуться к категории
+                showCategoryPage(currentCategory);
             } else {
+                // На всякий случай - на главную
                 showMainPage();
             }
         }
@@ -858,13 +877,15 @@
                     uploaded_at: new Date().toISOString()
                 };
                 
-                // Если есть категория (возрастная группа или специалист), добавляем её
-                if (currentCategory) {
+                // Добавляем категорию и тип в зависимости от источника
+                if (isFromMethodical) {
+                    // Если из методической копилки
+                    fileData.category = 'Методическая копилка';
+                    fileData.subcategory = currentMethod;
+                } else if (currentCategory) {
+                    // Если из категории (возрастная группа или специалист)
                     fileData.category = currentCategory;
                     fileData.subcategory = currentMethod;
-                } else {
-                    // Если нет категории (методическая копилка)
-                    fileData.category = currentMethod;
                 }
                 
                 const { error: dbError } = await supabase
@@ -915,15 +936,12 @@
                     .order('uploaded_at', { ascending: false });
                 
                 // Фильтруем файлы в зависимости от текущего контекста
-                if (currentCategory && currentMethod) {
-                    // Если выбрана категория (возрастная группа/специалист) И метод (раздел)
+                if (isFromMethodical) {
+                    // Если из методической копилки - показываем файлы этой категории
+                    query = query.eq('subcategory', currentMethod);
+                } else if (currentCategory && currentMethod) {
+                    // Если из категории (возрастная группа/специалист) - показываем файлы этой категории и подкатегории
                     query = query.eq('category', currentCategory).eq('subcategory', currentMethod);
-                } else if (currentCategory && !currentMethod) {
-                    // Если выбрана только категория (не должно случаться)
-                    query = query.eq('category', currentCategory);
-                } else if (!currentCategory && currentMethod) {
-                    // Если выбрана только метод (методическая копилка)
-                    query = query.eq('category', currentMethod);
                 }
                 
                 // Выполняем запрос
@@ -934,10 +952,10 @@
                 if (!files || files.length === 0) {
                     let noFilesMsg = '';
                     
-                    if (currentCategory && currentMethod) {
-                        noFilesMsg = `Пока нет файлов в разделе "${currentMethod}" категории "${currentCategory}"`;
-                    } else if (currentMethod) {
+                    if (isFromMethodical) {
                         noFilesMsg = `Пока нет файлов в разделе "${currentMethod}"`;
+                    } else if (currentCategory && currentMethod) {
+                        noFilesMsg = `Пока нет файлов в разделе "${currentMethod}" категории "${currentCategory}"`;
                     } else {
                         noFilesMsg = 'Пока нет загруженных файлов';
                     }
