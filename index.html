@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Электронная библиотека</title>
     <style>
-        /* ВСЕ СТИЛИ ОСТАЮТСЯ ТАКИМИ ЖЕ КАК В ПРЕДЫДУЩЕМ КОДЕ */
+        /* ВСЕ СТИЛИ ОСТАЮТСЯ ТАКИМИ ЖЕ */
         * {
             margin: 0;
             padding: 0;
@@ -623,6 +623,91 @@
             width: 0%;
             transition: width 0.3s ease;
         }
+
+        /* Сообщение о настройке */
+        .setup-message {
+            background: #FFF8E1;
+            border: 2px solid #FF8C00;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 800px;
+            text-align: left;
+        }
+        
+        .setup-message h3 {
+            color: #FF8C00;
+            margin-bottom: 10px;
+        }
+
+        /* Стили для алертов */
+        .custom-alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            z-index: 10000;
+            animation: slideInRight 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            max-width: 400px;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+
+        .alert-error {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        @keyframes slideInRight {
+            from { 
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Кнопка закрытия алерта */
+        .alert-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            margin-left: 15px;
+            float: right;
+        }
+
+        /* Лоадер */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #FF8C00;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -640,7 +725,16 @@
         <div class="disney-book book-disney-6"></div>
     </div>
 
+    <!-- Контейнер для кастомных алертов -->
+    <div id="alertContainer"></div>
+
     <div class="container">
+        <!-- Сообщение о настройке -->
+        <div id="setupMessage" class="setup-message" style="display: none;">
+            <h3>⚙️ Настройка базы данных</h3>
+            <p id="setupMessageText"></p>
+        </div>
+
         <!-- Главная страница -->
         <div id="mainPage" class="main-page fade-in">
             <h1 class="main-title">Электронная библиотека</h1>
@@ -697,7 +791,8 @@
                 <div class="upload-info">
                     <p>📁 Файлы сохраняются для всех пользователей</p>
                     <p>📊 Максимальный размер: 50MB</p>
-                    <p>⚠️ Используйте латинские буквы в именах файлов</p>
+                    <p>✅ Поддерживаемые форматы: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, JPG, PNG, GIF, ZIP, TXT</p>
+                    <p>⚠️ Файлы с расширением .exe, .bat, .sh, .php не принимаются</p>
                 </div>
                 
                 <input type="file" id="fileInput" class="file-input" multiple>
@@ -708,10 +803,14 @@
                 </div>
                 
                 <button class="upload-button" onclick="uploadFile()" id="uploadBtn">📤 Загрузить файл для всех</button>
+                <button class="upload-button" onclick="cancelUpload()" id="cancelBtn" style="display: none; background: #FF6B6B;">❌ Отменить загрузку</button>
                 
                 <div class="file-list" id="fileList">
                     <h3 style="color: #FF8C00;">Все файлы (видны всем):</h3>
-                    <!-- Файлы будут появляться здесь -->
+                    <div id="loadingIndicator" style="text-align: center; padding: 20px; display: none;">
+                        <div class="loader"></div>
+                        <p style="color: #FFA500; margin-top: 10px;">Загрузка файлов...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -743,7 +842,178 @@
         let lastCategoryPage = '';
         let isFromMethodical = false;
         let supabaseClient = null;
+        let isDatabaseReady = false;
+        let uploadInProgress = false;
+        let uploadAbortController = null;
 
+        // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+        
+        // Функция для показа кастомного алерта
+        function showAlert(message, type = 'info', duration = 5000) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertId = 'alert-' + Date.now();
+            
+            const alertTypes = {
+                'success': 'alert-success',
+                'error': 'alert-error',
+                'warning': 'alert-warning',
+                'info': 'alert-info'
+            };
+            
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `custom-alert ${alertTypes[type] || 'alert-info'}`;
+            alertDiv.id = alertId;
+            alertDiv.innerHTML = `
+                <span>${message}</span>
+                <button class="alert-close" onclick="closeAlert('${alertId}')">×</button>
+            `;
+            
+            alertContainer.appendChild(alertDiv);
+            
+            // Автоматическое закрытие
+            if (duration > 0) {
+                setTimeout(() => {
+                    closeAlert(alertId);
+                }, duration);
+            }
+            
+            return alertId;
+        }
+        
+        function closeAlert(alertId) {
+            const alert = document.getElementById(alertId);
+            if (alert) {
+                alert.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.parentNode.removeChild(alert);
+                    }
+                }, 300);
+            }
+        }
+        
+        // Функция для транслитерации
+        function transliterateToLatin(text) {
+            const rusToLat = {
+                'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
+                'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i',
+                'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
+                'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't',
+                'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch',
+                'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '',
+                'э': 'e', 'ю': 'yu', 'я': 'ya',
+                'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D',
+                'Е': 'E', 'Ё': 'Yo', 'Ж': 'Zh', 'З': 'Z', 'И': 'I',
+                'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N',
+                'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T',
+                'У': 'U', 'Ф': 'F', 'Х': 'H', 'Ц': 'Ts', 'Ч': 'Ch',
+                'Ш': 'Sh', 'Щ': 'Sch', 'Ъ': '', 'Ы': 'Y', 'Ь': '',
+                'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
+            };
+            
+            return text.split('').map(char => rusToLat[char] || char).join('');
+        }
+        
+        // Функция для создания безопасного имени файла
+        function createSafeFileName(method, originalName) {
+            const safeMethod = transliterateToLatin(method);
+            const cleanMethod = safeMethod.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+            
+            // Получаем расширение файла в нижнем регистре
+            const lastDotIndex = originalName.lastIndexOf('.');
+            let fileExtension = '';
+            let fileNameWithoutExt = originalName;
+            
+            if (lastDotIndex > 0) {
+                fileExtension = originalName.substring(lastDotIndex + 1).toLowerCase();
+                fileNameWithoutExt = originalName.substring(0, lastDotIndex);
+            }
+            
+            // Очищаем имя файла от специальных символов
+            const cleanFileName = transliterateToLatin(fileNameWithoutExt)
+                .replace(/[^a-zA-Z0-9._-]/g, '_')
+                .substring(0, 100); // Ограничиваем длину
+            
+            const timestamp = Date.now();
+            const randomString = Math.random().toString(36).substring(2, 10);
+            
+            if (fileExtension) {
+                return `${cleanMethod}_${cleanFileName}_${timestamp}_${randomString}.${fileExtension}`;
+            } else {
+                return `${cleanMethod}_${cleanFileName}_${timestamp}_${randomString}`;
+            }
+        }
+        
+        // Проверка типа файла
+        function isValidFileType(fileName) {
+            const allowedExtensions = [
+                '.pdf', '.doc', '.docx', '.ppt', '.pptx', 
+                '.xls', '.xlsx', '.jpg', '.jpeg', '.png', 
+                '.gif', '.zip', '.txt', '.md', '.rtf',
+                '.mp3', '.mp4', '.avi', '.mov', '.wmv'
+            ];
+            
+            const dangerousExtensions = ['.exe', '.bat', '.sh', '.php', '.js', '.html'];
+            
+            const lowerCaseName = fileName.toLowerCase();
+            
+            // Проверка на опасные файлы
+            for (const ext of dangerousExtensions) {
+                if (lowerCaseName.endsWith(ext)) {
+                    return { valid: false, reason: `Файлы с расширением ${ext} не разрешены` };
+                }
+            }
+            
+            // Проверка на разрешенные расширения
+            for (const ext of allowedExtensions) {
+                if (lowerCaseName.endsWith(ext)) {
+                    return { valid: true };
+                }
+            }
+            
+            return { valid: false, reason: 'Неподдерживаемый тип файла' };
+        }
+        
+        // Проверка размера файла
+        function isValidFileSize(fileSize) {
+            const maxSize = 50 * 1024 * 1024; // 50MB
+            if (fileSize > maxSize) {
+                return { valid: false, reason: `Файл слишком большой. Максимум: 50MB` };
+            }
+            if (fileSize === 0) {
+                return { valid: false, reason: 'Файл пустой' };
+            }
+            return { valid: true };
+        }
+        
+        // Функция для получения безопасного отображаемого имени
+        function getSafeDisplayName(originalName, customName = '') {
+            if (customName && customName.trim()) {
+                return customName.trim().substring(0, 200); // Ограничиваем длину
+            }
+            
+            const lastDotIndex = originalName.lastIndexOf('.');
+            if (lastDotIndex > 0) {
+                return originalName.substring(0, lastDotIndex).substring(0, 200);
+            }
+            return originalName.substring(0, 200);
+        }
+        
+        function getBadgeClass(category) {
+            switch(category) {
+                case 'ЭСКР': return 'badge-esc';
+                case 'РР': return 'badge-rr';
+                case 'ПР': return 'badge-pr';
+                case 'ХЭ': return 'badge-he';
+                case 'ФР': return 'badge-fr';
+                case 'Конспекты занятий': return 'badge-esc';
+                case 'Презентации': return 'badge-rr';
+                case 'Воспитательные события (КПВР)': return 'badge-pr';
+                case 'Другое': return 'badge-he';
+                default: return 'badge-fr';
+            }
+        }
+        
         // ==================== НАВИГАЦИЯ ====================
         
         function showMainPage() {
@@ -766,6 +1036,11 @@
         }
         
         function showUploadPage(method, fromMethodical = false) {
+            if (!isDatabaseReady) {
+                showAlert('База данных не готова. Подождите завершения инициализации.', 'warning');
+                return;
+            }
+            
             currentMethod = method;
             isFromMethodical = fromMethodical;
             
@@ -796,110 +1071,213 @@
             }
         }
         
-        // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ====================
+        // ==================== РАБОТА С БАЗОЙ ДАННЫХ ====================
         
-        // Функция для транслитерации русского текста в латиницу
-        function transliterateToLatin(text) {
-            const rusToLat = {
-                'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd',
-                'е': 'e', 'ё': 'yo', 'ж': 'zh', 'з': 'z', 'и': 'i',
-                'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n',
-                'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't',
-                'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch',
-                'ш': 'sh', 'щ': 'sch', 'ъ': '', 'ы': 'y', 'ь': '',
-                'э': 'e', 'ю': 'yu', 'я': 'ya',
-                'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D',
-                'Е': 'E', 'Ё': 'Yo', 'Ж': 'Zh', 'З': 'Z', 'И': 'I',
-                'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M', 'Н': 'N',
-                'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T',
-                'У': 'U', 'Ф': 'F', 'Х': 'H', 'Ц': 'Ts', 'Ч': 'Ch',
-                'Ш': 'Sh', 'Щ': 'Sch', 'Ъ': '', 'Ы': 'Y', 'Ь': '',
-                'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
-            };
+        async function checkAndSetupDatabase() {
+            const setupMessage = document.getElementById('setupMessage');
+            const setupMessageText = document.getElementById('setupMessageText');
             
-            return text.split('').map(char => rusToLat[char] || char).join('');
+            try {
+                setupMessage.style.display = 'block';
+                setupMessageText.textContent = '🔍 Проверяем подключение к Supabase...';
+                
+                // Проверяем подключение к Supabase
+                const { data: testData, error: testError } = await supabaseClient
+                    .from('files')
+                    .select('count')
+                    .limit(1);
+                
+                if (testError) {
+                    if (testError.message.includes('relation "files" does not exist')) {
+                        setupMessageText.innerHTML = `
+                            <p>📋 <strong>Необходимо создать таблицу в Supabase:</strong></p>
+                            <p>1. Зайдите в Supabase Dashboard → SQL Editor</p>
+                            <p>2. Выполните этот SQL запрос:</p>
+                            <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto;">
+CREATE TABLE IF NOT EXISTS files (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    original_name TEXT NOT NULL,
+    file_path TEXT NOT NULL UNIQUE,
+    file_url TEXT NOT NULL,
+    file_size BIGINT NOT NULL,
+    file_type TEXT NOT NULL,
+    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    category TEXT,
+    subcategory TEXT
+);
+
+-- Создаем индексы для быстрого поиска
+CREATE INDEX IF NOT EXISTS idx_files_category ON files(category);
+CREATE INDEX IF NOT EXISTS idx_files_subcategory ON files(subcategory);
+CREATE INDEX IF NOT EXISTS idx_files_uploaded_at ON files(uploaded_at DESC);
+                            </pre>
+                            <p>3. Нажмите "Run"</p>
+                            <p>4. <button onclick="location.reload()" style="background: #FF8C00; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">Обновите страницу</button></p>
+                        `;
+                        isDatabaseReady = false;
+                        return;
+                    } else {
+                        throw testError;
+                    }
+                }
+                
+                setupMessage.style.display = 'none';
+                isDatabaseReady = true;
+                showAlert('База данных подключена успешно!', 'success', 3000);
+                
+            } catch (error) {
+                console.error('Ошибка проверки базы данных:', error);
+                setupMessageText.innerHTML = `
+                    <p>❌ <strong>Ошибка подключения к базе данных:</strong></p>
+                    <p><strong>${error.message}</strong></p>
+                    <p>Возможные причины:</p>
+                    <ol>
+                        <li>Таблица "files" не существует в Supabase</li>
+                        <li>Проблемы с сетевым подключением</li>
+                        <li>Неверные настройки Supabase URL/Key</li>
+                    </ol>
+                    <p><button onclick="location.reload()" style="background: #FF8C00; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">Попробовать снова</button></p>
+                `;
+                isDatabaseReady = false;
+            }
         }
         
-        // Функция для создания безопасного имени файла
-        function createSafeFileName(method, originalName) {
-            // Транслитерируем метод в латиницу
-            const safeMethod = transliterateToLatin(method);
-            
-            // Создаем безопасное имя метода (только латинские буквы, цифры и подчеркивания)
-            const cleanMethod = safeMethod.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-            
-            // Получаем расширение файла
-            const fileExtension = originalName.split('.').pop().toLowerCase();
-            
-            // Создаем timestamp и случайную строку
-            const timestamp = Date.now();
-            const randomString = Math.random().toString(36).substring(2, 10);
-            
-            // Создаем безопасное имя файла
-            return `${cleanMethod}_${timestamp}_${randomString}.${fileExtension}`;
+        // ==================== ЗАГРУЗКА ФАЙЛОВ ====================
+        
+        function cancelUpload() {
+            if (uploadAbortController) {
+                uploadAbortController.abort();
+                showAlert('Загрузка отменена', 'warning');
+                resetUploadForm();
+            }
         }
         
-        // Функция для получения безопасного отображаемого имени
-        function getSafeDisplayName(originalName) {
-            // Убираем расширение
-            const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
-            // Оставляем только безопасные символы для отображения
-            return nameWithoutExt.replace(/[<>:"/\\|?*]/g, '_');
+        function resetUploadForm() {
+            const uploadBtn = document.getElementById('uploadBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = '📤 Загрузить файл для всех';
+            cancelBtn.style.display = 'none';
+            progressBar.style.display = 'none';
+            progressFill.style.width = '0%';
+            uploadInProgress = false;
+            uploadAbortController = null;
         }
-        
-        // ==================== РАБОТА С FILES ====================
         
         async function uploadFile() {
+            if (uploadInProgress) {
+                showAlert('Загрузка уже выполняется', 'warning');
+                return;
+            }
+            
+            if (!isDatabaseReady) {
+                showAlert('База данных не готова', 'error');
+                return;
+            }
+            
             const fileInput = document.getElementById('fileInput');
             const fileNameInput = document.getElementById('fileName');
             const uploadBtn = document.getElementById('uploadBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
             const progressBar = document.getElementById('progressBar');
             const progressFill = document.getElementById('progressFill');
             
             const file = fileInput.files[0];
             const customName = fileNameInput.value.trim();
             
+            // Проверка выбора файла
             if (!file) {
-                alert('Пожалуйста, выберите файл');
+                showAlert('Пожалуйста, выберите файл для загрузки', 'warning');
                 return;
             }
             
-            if (file.size > 50 * 1024 * 1024) {
-                alert('Файл слишком большой! Максимальный размер: 50MB');
+            // Проверка типа файла
+            const fileTypeCheck = isValidFileType(file.name);
+            if (!fileTypeCheck.valid) {
+                showAlert(fileTypeCheck.reason, 'error');
+                return;
+            }
+            
+            // Проверка размера файла
+            const fileSizeCheck = isValidFileSize(file.size);
+            if (!fileSizeCheck.valid) {
+                showAlert(fileSizeCheck.reason, 'error');
+                return;
+            }
+            
+            // Проверка соединения с интернетом
+            if (!navigator.onLine) {
+                showAlert('Нет подключения к интернету', 'error');
                 return;
             }
             
             try {
+                uploadInProgress = true;
+                uploadAbortController = new AbortController();
+                
+                // Настройка UI для загрузки
                 uploadBtn.disabled = true;
                 uploadBtn.textContent = '📤 Загрузка...';
+                cancelBtn.style.display = 'inline-block';
                 progressBar.style.display = 'block';
-                progressFill.style.width = '10%';
+                progressFill.style.width = '5%';
                 
                 // 1. Создаем безопасное имя файла
                 const safeFileName = createSafeFileName(currentMethod, file.name);
-                console.log('Безопасное имя файла:', safeFileName);
                 
-                // 2. Загружаем файл в Supabase Storage
-                progressFill.style.width = '30%';
-                
-                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                // 2. Проверяем, не существует ли уже файл с таким именем
+                progressFill.style.width = '10%';
+                const { data: existingFiles } = await supabaseClient.storage
                     .from('library-files')
-                    .upload(safeFileName, file);
+                    .list('', { 
+                        search: safeFileName 
+                    });
                 
-                if (uploadError) {
-                    console.error('Ошибка загрузки в Storage:', uploadError);
-                    throw uploadError;
+                if (existingFiles && existingFiles.length > 0) {
+                    throw new Error('Файл с таким именем уже существует');
                 }
                 
-                // 3. Получаем публичную ссылку
-                progressFill.style.width = '60%';
+                // 3. Загружаем файл в Supabase Storage с прогрессом
+                progressFill.style.width = '20%';
+                
+                // Создаем кастомную загрузку с отслеживанием прогресса
+                const chunkSize = 1024 * 1024; // 1MB chunks
+                const totalChunks = Math.ceil(file.size / chunkSize);
+                let uploadedChunks = 0;
+                
+                // Для простоты используем стандартную загрузку
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('library-files')
+                    .upload(safeFileName, file, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+                
+                if (uploadError) {
+                    if (uploadError.message.includes('The resource already exists')) {
+                        throw new Error('Файл с таким именем уже существует');
+                    } else if (uploadError.message.includes('Invalid key')) {
+                        throw new Error('Недопустимое имя файла');
+                    } else if (uploadError.message.includes('Payload too large')) {
+                        throw new Error('Файл слишком большой');
+                    } else {
+                        throw uploadError;
+                    }
+                }
+                
+                // 4. Получаем публичную ссылку
+                progressFill.style.width = '70%';
                 const { data: urlData } = supabaseClient.storage
                     .from('library-files')
                     .getPublicUrl(safeFileName);
                 
-                // 4. Сохраняем информацию в базу данных
-                progressFill.style.width = '80%';
-                const displayName = customName || getSafeDisplayName(file.name);
+                // 5. Сохраняем информацию в базу данных
+                progressFill.style.width = '85%';
+                const displayName = getSafeDisplayName(file.name, customName);
                 
                 const fileData = {
                     name: displayName,
@@ -911,80 +1289,138 @@
                     uploaded_at: new Date().toISOString()
                 };
                 
-                if (isFromMethodical) {
-                    fileData.category = 'Методическая копилка';
+                // Добавляем категорию и подкатегорию, если они существуют в таблице
+                try {
+                    if (isFromMethodical) {
+                        fileData.category = 'Методическая копилка';
+                    } else if (currentCategory) {
+                        fileData.category = currentCategory;
+                    }
                     fileData.subcategory = currentMethod;
-                } else if (currentCategory) {
-                    fileData.category = currentCategory;
-                    fileData.subcategory = currentMethod;
-                }
-                
-                console.log('Сохранение в базу данных:', fileData);
-                const { error: dbError } = await supabaseClient
-                    .from('files')
-                    .insert([fileData]);
-                
-                if (dbError) {
-                    console.error('Ошибка сохранения в базу данных:', dbError);
+                    
+                    const { error: dbError } = await supabaseClient
+                        .from('files')
+                        .insert([fileData]);
+                    
+                    if (dbError) {
+                        // Если ошибка из-за отсутствия колонок, пробуем без них
+                        if (dbError.message.includes('column') && 
+                            (dbError.message.includes('category') || dbError.message.includes('subcategory'))) {
+                            
+                            delete fileData.category;
+                            delete fileData.subcategory;
+                            
+                            const { error: simpleError } = await supabaseClient
+                                .from('files')
+                                .insert([fileData]);
+                                
+                            if (simpleError) throw simpleError;
+                        } else {
+                            throw dbError;
+                        }
+                    }
+                } catch (dbError) {
+                    console.error('Ошибка сохранения в БД:', dbError);
+                    // Пытаемся удалить загруженный файл из Storage
+                    await supabaseClient.storage
+                        .from('library-files')
+                        .remove([safeFileName]);
                     throw dbError;
                 }
                 
-                // 5. Завершаем загрузку
+                // 6. Завершаем загрузку
                 progressFill.style.width = '100%';
                 
-                // 6. Очищаем форму и обновляем список
+                // 7. Очищаем форму и обновляем список
                 setTimeout(() => {
                     fileInput.value = '';
                     fileNameInput.value = '';
-                    uploadBtn.disabled = false;
-                    uploadBtn.textContent = '📤 Загрузить файл для всех';
-                    progressBar.style.display = 'none';
-                    progressFill.style.width = '0%';
+                    resetUploadForm();
                     
-                    alert('✅ Файл успешно загружен для всех пользователей!');
+                    showAlert('✅ Файл успешно загружен для всех пользователей!', 'success', 4000);
                     loadFiles();
                 }, 500);
                 
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
                 
-                uploadBtn.disabled = false;
-                uploadBtn.textContent = '📤 Загрузить файл для всех';
-                progressBar.style.display = 'none';
-                progressFill.style.width = '0%';
+                resetUploadForm();
                 
+                // Обработка различных ошибок
                 let errorMessage = '❌ Ошибка загрузки';
-                if (error.message.includes('Invalid key')) {
-                    errorMessage = '❌ Ошибка: неверное имя файла. Файл автоматически переименован, попробуйте еще раз.';
+                
+                if (error.name === 'AbortError') {
+                    errorMessage = 'Загрузка отменена пользователем';
+                } else if (error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Ошибка сети. Проверьте подключение к интернету';
+                } else if (error.message.includes('already exists')) {
+                    errorMessage = 'Файл с таким именем уже существует. Попробуйте переименовать файл';
+                } else if (error.message.includes('Invalid key')) {
+                    errorMessage = 'Недопустимое имя файла. Используйте только латинские буквы и цифры';
+                } else if (error.message.includes('Payload too large')) {
+                    errorMessage = 'Файл слишком большой. Максимальный размер: 50MB';
                 } else if (error.message.includes('Bucket not found')) {
-                    errorMessage = '❌ Ошибка: бакет "library-files" не найден. Создайте его в Supabase Storage';
+                    errorMessage = 'Хранилище не найдено. Проверьте настройки Supabase Storage';
+                } else if (error.message.includes('JWT')) {
+                    errorMessage = 'Ошибка авторизации. Проверьте ключ Supabase';
+                } else if (error.message.includes('column')) {
+                    errorMessage = 'Ошибка структуры базы данных. Проверьте настройку таблицы';
                 } else {
                     errorMessage = `❌ Ошибка загрузки: ${error.message}`;
                 }
                 
-                alert(errorMessage);
+                showAlert(errorMessage, 'error', 6000);
             }
         }
         
+        // ==================== ЗАГРУЗКА СПИСКА ФАЙЛОВ ====================
+        
         async function loadFiles() {
+            if (!isDatabaseReady) {
+                document.getElementById('fileList').innerHTML = `
+                    <h3 style="color: #FF8C00;">Все файлы (видны всем):</h3>
+                    <p style="color: #FFA500; text-align: center; padding: 20px;">
+                        База данных не готова. Проверьте настройку таблицы files.
+                    </p>
+                `;
+                return;
+            }
+            
             const fileList = document.getElementById('fileList');
-            fileList.innerHTML = '<h3 style="color: #FF8C00;">Все файлы (видны всем):</h3><p style="color: #FFA500;">Загрузка...</p>';
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            fileList.innerHTML = '<h3 style="color: #FF8C00;">Все файлы (видны всем):</h3>';
+            loadingIndicator.style.display = 'block';
             
             try {
                 let query = supabaseClient
                     .from('files')
                     .select('*')
-                    .order('uploaded_at', { ascending: false });
+                    .order('uploaded_at', { ascending: false })
+                    .limit(100); // Ограничиваем количество файлов
                 
-                if (isFromMethodical) {
-                    query = query.eq('subcategory', currentMethod);
-                } else if (currentCategory && currentMethod) {
-                    query = query.eq('category', currentCategory).eq('subcategory', currentMethod);
+                // Пробуем фильтровать, но если не получается - грузим все
+                try {
+                    if (isFromMethodical && currentMethod) {
+                        query = query.eq('subcategory', currentMethod);
+                    } else if (currentCategory && currentMethod) {
+                        query = query.eq('category', currentCategory).eq('subcategory', currentMethod);
+                    }
+                } catch (filterError) {
+                    console.log('Фильтрация не доступна, загружаем все файлы');
                 }
                 
                 const { data: files, error } = await query;
                 
-                if (error) throw error;
+                if (error) {
+                    if (error.message.includes('Failed to fetch')) {
+                        throw new Error('Ошибка сети. Проверьте подключение к интернету');
+                    } else {
+                        throw error;
+                    }
+                }
+                
+                loadingIndicator.style.display = 'none';
                 
                 if (!files || files.length === 0) {
                     let noFilesMsg = '';
@@ -994,12 +1430,19 @@
                     } else if (currentCategory && currentMethod) {
                         noFilesMsg = `Пока нет файлов в разделе "${currentMethod}" категории "${currentCategory}"`;
                     } else {
-                        noFilesMsg = 'Пока нет загруженных файлов';
+                        noFilesMsg = 'Пока нет загруженных файлов. Будьте первым!';
                     }
                     
                     fileList.innerHTML = `
                         <h3 style="color: #FF8C00;">Все файлы (видны всем):</h3>
-                        <p style="color: #FFA500; text-align: center; padding: 20px;">${noFilesMsg}</p>
+                        <p style="color: #FFA500; text-align: center; padding: 20px;">
+                            ${noFilesMsg}
+                            <br><br>
+                            <button onclick="document.getElementById('fileInput').click()" 
+                                    style="background: #FF8C00; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1rem;">
+                                📤 Загрузить первый файл
+                            </button>
+                        </p>
                     `;
                     return;
                 }
@@ -1009,8 +1452,20 @@
                 files.forEach(file => {
                     const fileSize = (file.file_size / 1024 / 1024).toFixed(2);
                     const uploadDate = new Date(file.uploaded_at).toLocaleString('ru-RU');
-                    const badgeClass = getBadgeClass(file.subcategory || file.category);
-                    const badgeText = file.subcategory || file.category;
+                    const category = file.category || 'Без категории';
+                    const subcategory = file.subcategory || 'Без подкатегории';
+                    const badgeClass = getBadgeClass(subcategory || category);
+                    const badgeText = subcategory || category;
+                    
+                    // Форматируем размер файла
+                    let sizeText = '';
+                    if (file.file_size < 1024) {
+                        sizeText = `${file.file_size} B`;
+                    } else if (file.file_size < 1024 * 1024) {
+                        sizeText = `${(file.file_size / 1024).toFixed(1)} KB`;
+                    } else {
+                        sizeText = `${(file.file_size / 1024 / 1024).toFixed(2)} MB`;
+                    }
                     
                     filesHTML += `
                         <div class="file-item">
@@ -1021,7 +1476,7 @@
                                     <span class="category-badge ${badgeClass}">${badgeText}</span>
                                 </div>
                                 <div class="file-details">
-                                    📦 ${fileSize} MB | 📅 ${uploadDate} | 📄 ${file.original_name}
+                                    📦 ${sizeText} | 📅 ${uploadDate} | 📄 ${file.original_name}
                                 </div>
                                 <div style="margin-top: 10px;">
                                     <button onclick="event.stopPropagation(); downloadFile('${file.file_url}', '${file.original_name}')" 
@@ -1030,7 +1485,7 @@
                                     </button>
                                     <button onclick="event.stopPropagation(); window.open('${file.file_url}', '_blank')" 
                                             style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
-                                        🔗 Открыть в новой вкладке
+                                        🔗 Открыть
                                     </button>
                                 </div>
                             </div>
@@ -1042,41 +1497,56 @@
                 
             } catch (error) {
                 console.error('Ошибка загрузки файлов:', error);
+                loadingIndicator.style.display = 'none';
+                
+                let errorMessage = 'Ошибка загрузки файлов';
+                if (error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Ошибка сети. Проверьте подключение к интернету';
+                } else if (error.message.includes('JWT')) {
+                    errorMessage = 'Ошибка авторизации. Проверьте настройки Supabase';
+                } else {
+                    errorMessage = error.message || 'Неизвестная ошибка';
+                }
+                
                 fileList.innerHTML = `
                     <h3 style="color: #FF8C00;">Все файлы (видны всем):</h3>
-                    <p style="color: #FFA500; text-align: center; padding: 20px;">
-                        Ошибка загрузки файлов: ${error.message || 'Проверьте подключение к интернету.'}
-                    </p>
+                    <div style="text-align: center; padding: 20px;">
+                        <p style="color: #e74c3c; margin-bottom: 15px;">❌ ${errorMessage}</p>
+                        <button onclick="loadFiles()" 
+                                style="background: #FF8C00; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                            🔄 Попробовать снова
+                        </button>
+                    </div>
                 `;
             }
         }
         
-        function getBadgeClass(category) {
-            switch(category) {
-                case 'ЭСКР': return 'badge-esc';
-                case 'РР': return 'badge-rr';
-                case 'ПР': return 'badge-pr';
-                case 'ХЭ': return 'badge-he';
-                case 'ФР': return 'badge-fr';
-                case 'Конспекты занятий': return 'badge-esc';
-                case 'Презентации': return 'badge-rr';
-                case 'Воспитательные события (КПВР)': return 'badge-pr';
-                case 'Другое': return 'badge-he';
-                default: return 'badge-fr';
-            }
-        }
-        
         function viewFile(url, filename) {
-            window.open(url, '_blank');
+            window.open(url, '_blank', 'noopener,noreferrer');
         }
         
         function downloadFile(url, filename) {
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            try {
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                
+                // Добавляем обработчик ошибок
+                link.onerror = function() {
+                    showAlert('Не удалось скачать файл. Попробуйте открыть его в новой вкладке.', 'error');
+                };
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showAlert('Скачивание началось', 'success', 2000);
+            } catch (error) {
+                showAlert('Ошибка при скачивании файла', 'error');
+                console.error('Ошибка скачивания:', error);
+            }
         }
         
         function showDeleteModal(fileId, filePath) {
@@ -1092,7 +1562,13 @@
         async function confirmDelete() {
             if (!fileToDelete) return;
             
+            const deleteBtn = document.querySelector('.modal-button.yes');
+            const originalText = deleteBtn.textContent;
+            deleteBtn.disabled = true;
+            deleteBtn.textContent = 'Удаление...';
+            
             try {
+                // 1. Удаляем запись из базы данных
                 const { error: dbError } = await supabaseClient
                     .from('files')
                     .delete()
@@ -1100,71 +1576,93 @@
                 
                 if (dbError) throw dbError;
                 
+                // 2. Удаляем файл из хранилища
                 const { error: storageError } = await supabaseClient.storage
                     .from('library-files')
                     .remove([fileToDelete.path]);
                 
-                if (storageError) throw storageError;
+                if (storageError) {
+                    // Если файл не найден в хранилище, это не критично
+                    if (!storageError.message.includes('Object not found')) {
+                        throw storageError;
+                    }
+                }
                 
-                alert('✅ Файл удален для всех пользователей');
+                cancelDelete();
+                showAlert('✅ Файл удален для всех пользователей', 'success', 3000);
                 loadFiles();
                 
             } catch (error) {
                 console.error('Ошибка удаления:', error);
-                alert(`❌ Ошибка удаления: ${error.message}`);
+                showAlert(`❌ Ошибка удаления: ${error.message}`, 'error', 5000);
             } finally {
-                cancelDelete();
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = originalText;
             }
-        }
-        
-        function setupRealtimeUpdates() {
-            supabaseClient
-                .channel('files-channel')
-                .on('postgres_changes', 
-                    { 
-                        event: '*', 
-                        schema: 'public', 
-                        table: 'files' 
-                    },
-                    (payload) => {
-                        console.log('Изменение в базе данных:', payload);
-                        if (document.getElementById('uploadPage').style.display !== 'none') {
-                            loadFiles();
-                        }
-                    }
-                )
-                .subscribe();
         }
         
         // ==================== ИНИЦИАЛИЗАЦИЯ ====================
         
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Проверяем онлайн статус
+            if (!navigator.onLine) {
+                showAlert('Вы не в сети. Некоторые функции могут быть недоступны.', 'warning', 0);
+            }
+            
+            // Слушаем изменения онлайн статуса
+            window.addEventListener('online', () => {
+                showAlert('Соединение восстановлено', 'success', 3000);
+                if (document.getElementById('uploadPage').style.display !== 'none') {
+                    loadFiles();
+                }
+            });
+            
+            window.addEventListener('offline', () => {
+                showAlert('Вы не в сети. Проверьте подключение к интернету.', 'error', 0);
+            });
+            
             if (!supabaseClient && window.supabase) {
                 try {
                     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                     console.log('Supabase инициализирован');
                     
-                    setupRealtimeUpdates();
+                    // Проверяем и настраиваем базу данных
+                    await checkAndSetupDatabase();
                     
                 } catch (error) {
                     console.error('Ошибка инициализации Supabase:', error);
-                    alert('Ошибка подключения к базе данных. Проверьте URL и ключ Supabase.');
+                    showAlert('Ошибка подключения к базе данных', 'error', 0);
+                    document.getElementById('setupMessage').style.display = 'block';
+                    document.getElementById('setupMessageText').innerHTML = `
+                        <p>❌ <strong>Ошибка подключения к Supabase:</strong></p>
+                        <p>${error.message}</p>
+                        <p>Проверьте консоль браузера для подробной информации.</p>
+                    `;
                 }
             }
             
             showMainPage();
             
+            // Закрытие модального окна при клике вне его
             document.getElementById('deleteModal').addEventListener('click', function(e) {
                 if (e.target === this) {
                     cancelDelete();
                 }
             });
             
-            setInterval(() => {
-                if (document.getElementById('uploadPage').style.display !== 'none') {
+            // Закрытие модального окна при нажатии Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    cancelDelete();
+                }
+            });
+            
+            // Автоматическая загрузка файлов при возвращении на страницу
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden && document.getElementById('uploadPage').style.display !== 'none') {
                     loadFiles();
                 }
-            }, 30000);
+            });
         });
     </script>
 </body>
