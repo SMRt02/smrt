@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Электронная библиотека</title>
     <style>
+        /* ВСЕ СТИЛИ ОСТАЮТСЯ ТАКИМИ ЖЕ КАК В ПРЕДЫДУЩЕМ КОДЕ */
         * {
             margin: 0;
             padding: 0;
@@ -27,6 +28,7 @@
             z-index: 2;
         }
 
+        /* Стили для книжных полок */
         .bookshelf-left, .bookshelf-right {
             position: fixed;
             top: 0;
@@ -53,6 +55,7 @@
             box-shadow: -5px 0 20px rgba(0,0,0,0.4);
         }
 
+        /* Стили для Disney-книг */
         .disney-book {
             position: relative;
             width: 80px;
@@ -74,6 +77,7 @@
                 inset -2px 0 8px rgba(255,255,255,0.6);
         }
 
+        /* Яркие Disney цвета для книг */
         .book-disney-1 { 
             background: linear-gradient(45deg, #FF6B9D, #FF8E53);
             border-top: 8px solid #FFD166;
@@ -105,6 +109,7 @@
             border-bottom: 8px solid #073B4C;
         }
 
+        /* Disney-узоры на книгах */
         .disney-book::before {
             content: '';
             position: absolute;
@@ -128,6 +133,7 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
 
+        /* Стили для главной страницы */
         .main-page {
             text-align: center;
             position: relative;
@@ -192,6 +198,7 @@
             transform: rotate(45deg) translate(50%, 50%);
         }
 
+        /* Новые кнопки специалистов */
         .specialists-buttons {
             display: flex;
             justify-content: center;
@@ -222,6 +229,7 @@
             background: linear-gradient(135deg, #FF8E53, #FF6B9D);
         }
 
+        /* Методическая копилка - БЕЗ РАМКИ */
         .method-section {
             margin: 40px 0;
             padding: 40px;
@@ -292,6 +300,7 @@
             left: 100%;
         }
 
+        /* Стили для страницы выбора категории */
         .category-page {
             text-align: center;
             position: relative;
@@ -355,6 +364,7 @@
             background: linear-gradient(135deg, #FFA500, #FF8C00);
         }
 
+        /* Стили для страницы загрузки файлов */
         .upload-page {
             text-align: center;
             position: relative;
@@ -479,6 +489,7 @@
             margin-top: 5px;
         }
 
+        /* Модальное окно подтверждения удаления */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -549,6 +560,7 @@
             transform: translateY(-2px);
         }
 
+        /* Анимации */
         .fade-in {
             animation: fadeIn 0.5s ease-in;
         }
@@ -569,6 +581,7 @@
             }
         }
 
+        /* Категорийные бейджи */
         .category-badge {
             display: inline-block;
             padding: 3px 10px;
@@ -585,6 +598,7 @@
         .badge-he { background: #06D6A0; }
         .badge-fr { background: #118AB2; }
         
+        /* Информация о загрузке */
         .upload-info {
             background: #FFF8E1;
             border: 2px solid #FFD166;
@@ -612,12 +626,14 @@
     </style>
 </head>
 <body>
+    <!-- Левая книжная полка -->
     <div class="bookshelf-left">
         <div class="disney-book book-disney-1"></div>
         <div class="disney-book book-disney-2"></div>
         <div class="disney-book book-disney-3"></div>
     </div>
     
+    <!-- Правая книжная полка -->
     <div class="bookshelf-right">
         <div class="disney-book book-disney-4"></div>
         <div class="disney-book book-disney-5"></div>
@@ -625,50 +641,56 @@
     </div>
 
     <div class="container">
+        <!-- Главная страница -->
         <div id="mainPage" class="main-page fade-in">
             <h1 class="main-title">Электронная библиотека</h1>
             
+            <!-- Кнопки возрастных групп -->
             <div class="nav-buttons">
-                <button class="nav-button" onclick="window.showCategoryPage('Ранний возраст')">Ранний возраст</button>
-                <button class="nav-button" onclick="window.showCategoryPage('Вторая младшая')">Вторая младшая</button>
-                <button class="nav-button" onclick="window.showCategoryPage('Средняя')">Средняя</button>
-                <button class="nav-button" onclick="window.showCategoryPage('Старшая')">Старшая</button>
-                <button class="nav-button" onclick="window.showCategoryPage('Подготовительная к школе')">Подготовительная к школе</button>
+                <button class="nav-button" onclick="showCategoryPage('Ранний возраст')">Ранний возраст</button>
+                <button class="nav-button" onclick="showCategoryPage('Вторая младшая')">Вторая младшая</button>
+                <button class="nav-button" onclick="showCategoryPage('Средняя')">Средняя</button>
+                <button class="nav-button" onclick="showCategoryPage('Старшая')">Старшая</button>
+                <button class="nav-button" onclick="showCategoryPage('Подготовительная к школе')">Подготовительная к школе</button>
             </div>
 
+            <!-- Кнопки специалистов -->
             <div class="specialists-buttons">
-                <button class="specialist-button" onclick="window.showCategoryPage('Учитель-логопед')">Учитель-логопед</button>
-                <button class="specialist-button" onclick="window.showCategoryPage('Педагог-психолог')">Педагог-психолог</button>
-                <button class="specialist-button" onclick="window.showCategoryPage('Музыкальный руководитель')">Музыкальный руководитель</button>
-                <button class="specialist-button" onclick="window.showCategoryPage('Инструктор по физическому развитию')">Инструктор по физическому развитию</button>
+                <button class="specialist-button" onclick="showCategoryPage('Учитель-логопед')">Учитель-логопед</button>
+                <button class="specialist-button" onclick="showCategoryPage('Педагог-психолог')">Педагог-психолог</button>
+                <button class="specialist-button" onclick="showCategoryPage('Музыкальный руководитель')">Музыкальный руководитель</button>
+                <button class="specialist-button" onclick="showCategoryPage('Инструктор по физическому развитию')">Инструктор по физическому развитию</button>
             </div>
 
+            <!-- Методическая копилка -->
             <div class="method-section">
                 <h2 class="method-title">Методическая копилка</h2>
                 <div class="method-subtitle">(старший воспитатель)</div>
                 <div class="method-buttons">
-                    <button class="method-button" onclick="window.showUploadPage('ЭСКР', true)">ЭСКР</button>
-                    <button class="method-button" onclick="window.showUploadPage('РР', true)">РР</button>
-                    <button class="method-button" onclick="window.showUploadPage('ПР', true)">ПР</button>
-                    <button class="method-button" onclick="window.showUploadPage('ХЭ', true)">ХЭ</button>
-                    <button class="method-button" onclick="window.showUploadPage('ФР', true)">ФР</button>
+                    <button class="method-button" onclick="showUploadPage('ЭСКР', true)">ЭСКР</button>
+                    <button class="method-button" onclick="showUploadPage('РР', true)">РР</button>
+                    <button class="method-button" onclick="showUploadPage('ПР', true)">ПР</button>
+                    <button class="method-button" onclick="showUploadPage('ХЭ', true)">ХЭ</button>
+                    <button class="method-button" onclick="showUploadPage('ФР', true)">ФР</button>
                 </div>
             </div>
         </div>
 
+        <!-- Страница выбора категории -->
         <div id="categoryPage" class="category-page" style="display: none;">
-            <button class="back-button" onclick="window.showMainPage()">← Назад в библиотеку</button>
+            <button class="back-button" onclick="showMainPage()">← Назад в библиотеку</button>
             <h2 class="page-title" id="categoryTitle">Категория: </h2>
             <div class="category-buttons">
-                <button class="category-button" onclick="window.showUploadPage('Конспекты занятий')">Конспекты занятий</button>
-                <button class="category-button" onclick="window.showUploadPage('Презентации')">Презентации</button>
-                <button class="category-button" onclick="window.showUploadPage('Воспитательные события (КПВР)')">Воспитательные события (КПВР)</button>
-                <button class="category-button" onclick="window.showUploadPage('Другое')">Другое</button>
+                <button class="category-button" onclick="showUploadPage('Конспекты занятий')">Конспекты занятий</button>
+                <button class="category-button" onclick="showUploadPage('Презентации')">Презентации</button>
+                <button class="category-button" onclick="showUploadPage('Воспитательные события (КПВР)')">Воспитательные события (КПВР)</button>
+                <button class="category-button" onclick="showUploadPage('Другое')">Другое</button>
             </div>
         </div>
 
+        <!-- Страница загрузки файлов -->
         <div id="uploadPage" class="upload-page" style="display: none;">
-            <button class="back-button" onclick="window.goBackFromUpload()">← Назад</button>
+            <button class="back-button" onclick="goBackFromUpload()">← Назад</button>
             <div class="upload-container">
                 <h2 class="upload-title" id="uploadTitle">Загрузка файлов: </h2>
                 
@@ -684,40 +706,48 @@
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
                 
-                <button class="upload-button" onclick="window.uploadFile()" id="uploadBtn">📤 Загрузить файл для всех</button>
+                <button class="upload-button" onclick="uploadFile()" id="uploadBtn">📤 Загрузить файл для всех</button>
                 
                 <div class="file-list" id="fileList">
                     <h3 style="color: #FF8C00;">Все файлы (видны всем):</h3>
+                    <!-- Файлы будут появляться здесь -->
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Модальное окно подтверждения удаления -->
     <div id="deleteModal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <div class="modal-title">Вы действительно хотите УДАЛИТЬ файл?</div>
             <div class="modal-buttons">
-                <button class="modal-button no" onclick="window.cancelDelete()">Нет</button>
-                <button class="modal-button yes" onclick="window.confirmDelete()">Да</button>
+                <button class="modal-button no" onclick="cancelDelete()">Нет</button>
+                <button class="modal-button yes" onclick="confirmDelete()">Да</button>
             </div>
         </div>
     </div>
 
+    <!-- Подключаем Supabase -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
     <script>
-        const SUPABASE_URL = 'https://lytmvlhzlodjumpdxvzv.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_KBNpRCOOanMGpaxAzFdq5w_FpOZvnSx';
-
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+        // ==================== КОНФИГУРАЦИЯ SUPABASE ====================
+        // ⚠️ ЗАМЕНИ ЭТИ ДАННЫЕ НА СВОИ!
+        const SUPABASE_URL = 'https://ВАШ-ПРОЕКТ.supabase.co';
+        const SUPABASE_KEY = 'ВАШ-ANON-PUBLIC-KEY';
+        
+        // ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
         let currentCategory = '';
         let currentMethod = '';
         let fileToDelete = null;
         let lastCategoryPage = '';
-        let isFromMethodical = false;
+        let isFromMethodical = false; // Флаг: из методической копилки или нет
+        let supabaseClient = null; // Supabase клиент
 
-        window.showMainPage = function() {
+        // ==================== НАВИГАЦИЯ ====================
+        
+        // Показать главную страницу
+        function showMainPage() {
             document.getElementById('mainPage').style.display = 'block';
             document.getElementById('categoryPage').style.display = 'none';
             document.getElementById('uploadPage').style.display = 'none';
@@ -725,8 +755,9 @@
             currentMethod = '';
             isFromMethodical = false;
         }
-
-        window.showCategoryPage = function(category) {
+        
+        // Показать страницу категории (для возрастных групп и специалистов)
+        function showCategoryPage(category) {
             currentCategory = category;
             lastCategoryPage = category;
             isFromMethodical = false;
@@ -735,40 +766,51 @@
             document.getElementById('uploadPage').style.display = 'none';
             document.getElementById('categoryTitle').textContent = `Категория: ${category}`;
         }
- 
-        window.showUploadPage = function(method, fromMethodical = false) {
+        
+        // Показать страницу загрузки файлов
+        function showUploadPage(method, fromMethodical = false) {
             currentMethod = method;
             isFromMethodical = fromMethodical;
-
+            
+            // Скрываем все страницы
             document.getElementById('mainPage').style.display = 'none';
             document.getElementById('categoryPage').style.display = 'none';
             document.getElementById('uploadPage').style.display = 'block';
-
+            
+            // Формируем заголовок
             let title = '';
             if (isFromMethodical) {
+                // Если из методической копилки
                 title = `Загрузка файлов: ${method}`;
             } else if (currentCategory) {
+                // Если из категории (возрастная группа или специалист)
                 title = `Загрузка файлов: ${currentCategory} - ${method}`;
             } else {
                 title = `Загрузка файлов: ${method}`;
             }
             
             document.getElementById('uploadTitle').textContent = title;
-            window.loadFiles();
+            loadFiles();
         }
-
-        window.goBackFromUpload = function() {
+        
+        // Вернуться назад из страницы загрузки
+        function goBackFromUpload() {
             if (isFromMethodical) {
-                window.showMainPage();
+                // Если были в методической копилке - вернуться на главную
+                showMainPage();
             } else if (currentCategory) {
-                window.showCategoryPage(currentCategory);
+                // Если были в категории - вернуться к категории
+                showCategoryPage(currentCategory);
             } else {
-                window.showMainPage();
+                // На всякий случай - на главную
+                showMainPage();
             }
         }
-
-
-        window.uploadFile = async function() {
+        
+        // ==================== РАБОТА С FILES ====================
+        
+        // Загрузка файла в Supabase
+        async function uploadFile() {
             const fileInput = document.getElementById('fileInput');
             const fileNameInput = document.getElementById('fileName');
             const uploadBtn = document.getElementById('uploadBtn');
@@ -782,38 +824,44 @@
                 alert('Пожалуйста, выберите файл');
                 return;
             }
-
+            
+            // Проверка размера (максимум 50MB)
             if (file.size > 50 * 1024 * 1024) {
                 alert('Файл слишком большой! Максимальный размер: 50MB');
                 return;
             }
             
             try {
+                // Блокируем кнопку загрузки
                 uploadBtn.disabled = true;
                 uploadBtn.textContent = '📤 Загрузка...';
                 progressBar.style.display = 'block';
                 progressFill.style.width = '10%';
-
+                
+                // 1. Создаем уникальное имя файла
                 const timestamp = Date.now();
                 const randomString = Math.random().toString(36).substring(2, 10);
                 const fileExtension = file.name.split('.').pop();
                 const fileName = `${currentMethod}_${timestamp}_${randomString}.${fileExtension}`;
                 const filePath = `${currentMethod}/${fileName}`;
-
+                
+                // 2. Загружаем файл в Supabase Storage
                 console.log('Загрузка файла:', file.name);
                 progressFill.style.width = '30%';
                 
-                const { data: uploadData, error: uploadError } = await supabase.storage
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
                     .from('library-files')
                     .upload(filePath, file);
                 
                 if (uploadError) throw uploadError;
-
+                
+                // 3. Получаем публичную ссылку
                 progressFill.style.width = '60%';
-                const { data: urlData } = supabase.storage
+                const { data: urlData } = supabaseClient.storage
                     .from('library-files')
                     .getPublicUrl(filePath);
-
+                
+                // 4. Сохраняем информацию в базу данных
                 progressFill.style.width = '80%';
                 const displayName = customName || file.name;
                 
@@ -826,23 +874,28 @@
                     file_type: file.type,
                     uploaded_at: new Date().toISOString()
                 };
-
+                
+                // Добавляем категорию и тип в зависимости от источника
                 if (isFromMethodical) {
+                    // Если из методической копилки
                     fileData.category = 'Методическая копилка';
                     fileData.subcategory = currentMethod;
                 } else if (currentCategory) {
+                    // Если из категории (возрастная группа или специалист)
                     fileData.category = currentCategory;
                     fileData.subcategory = currentMethod;
                 }
                 
-                const { error: dbError } = await supabase
+                const { error: dbError } = await supabaseClient
                     .from('files')
                     .insert([fileData]);
                 
                 if (dbError) throw dbError;
-
+                
+                // 5. Завершаем загрузку
                 progressFill.style.width = '100%';
-
+                
+                // 6. Очищаем форму и обновляем список
                 setTimeout(() => {
                     fileInput.value = '';
                     fileNameInput.value = '';
@@ -852,12 +905,13 @@
                     progressFill.style.width = '0%';
                     
                     alert('✅ Файл успешно загружен для всех пользователей!');
-                    window.loadFiles();
+                    loadFiles();
                 }, 500);
                 
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
-
+                
+                // Восстанавливаем кнопку
                 uploadBtn.disabled = false;
                 uploadBtn.textContent = '📤 Загрузить файл для всех';
                 progressBar.style.display = 'none';
@@ -866,23 +920,29 @@
                 alert(`❌ Ошибка загрузки: ${error.message}`);
             }
         }
-
-        window.loadFiles = async function() {
+        
+        // Загрузка списка файлов
+        async function loadFiles() {
             const fileList = document.getElementById('fileList');
             fileList.innerHTML = '<h3 style="color: #FF8C00;">Все файлы (видны всем):</h3><p style="color: #FFA500;">Загрузка...</p>';
             
             try {
-                let query = supabase
+                // Определяем фильтр для запроса
+                let query = supabaseClient
                     .from('files')
                     .select('*')
                     .order('uploaded_at', { ascending: false });
-
+                
+                // Фильтруем файлы в зависимости от текущего контекста
                 if (isFromMethodical) {
+                    // Если из методической копилки - показываем файлы этой категории
                     query = query.eq('subcategory', currentMethod);
                 } else if (currentCategory && currentMethod) {
+                    // Если из категории (возрастная группа/специалист) - показываем файлы этой категории и подкатегории
                     query = query.eq('category', currentCategory).eq('subcategory', currentMethod);
                 }
                 
+                // Выполняем запрос
                 const { data: files, error } = await query;
                 
                 if (error) throw error;
@@ -904,19 +964,20 @@
                     `;
                     return;
                 }
-
+                
+                // Формируем HTML список
                 let filesHTML = '<h3 style="color: #FF8C00;">Все файлы (видны всем):</h3>';
                 
                 files.forEach(file => {
                     const fileSize = (file.file_size / 1024 / 1024).toFixed(2);
                     const uploadDate = new Date(file.uploaded_at).toLocaleString('ru-RU');
-                    const badgeClass = window.getBadgeClass(file.subcategory || file.category);
+                    const badgeClass = getBadgeClass(file.subcategory || file.category);
                     const badgeText = file.subcategory || file.category;
                     
                     filesHTML += `
                         <div class="file-item">
-                            <button class="delete-button" onclick="window.showDeleteModal('${file.id}', '${file.file_path}')">×</button>
-                            <div class="file-info" onclick="window.viewFile('${file.file_url}', '${file.original_name}')">
+                            <button class="delete-button" onclick="showDeleteModal('${file.id}', '${file.file_path}')">×</button>
+                            <div class="file-info" onclick="viewFile('${file.file_url}', '${file.original_name}')">
                                 <div class="file-name">
                                     ${file.name}
                                     <span class="category-badge ${badgeClass}">${badgeText}</span>
@@ -925,7 +986,7 @@
                                     📦 ${fileSize} MB | 📅 ${uploadDate} | 📄 ${file.original_name}
                                 </div>
                                 <div style="margin-top: 10px;">
-                                    <button onclick="event.stopPropagation(); window.downloadFile('${file.file_url}', '${file.original_name}')" 
+                                    <button onclick="event.stopPropagation(); downloadFile('${file.file_url}', '${file.original_name}')" 
                                             style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-right: 10px;">
                                         ⬇️ Скачать
                                     </button>
@@ -951,8 +1012,9 @@
                 `;
             }
         }
-
-        window.getBadgeClass = function(category) {
+        
+        // Получить класс для бейджа категории
+        function getBadgeClass(category) {
             switch(category) {
                 case 'ЭСКР': return 'badge-esc';
                 case 'РР': return 'badge-rr';
@@ -967,11 +1029,13 @@
             }
         }
         
-        window.viewFile = function(url, filename) {
+        // Просмотр файла
+        function viewFile(url, filename) {
             window.open(url, '_blank');
         }
         
-        window.downloadFile = function(url, filename) {
+        // Скачивание файла
+        function downloadFile(url, filename) {
             const link = document.createElement('a');
             link.href = url;
             link.download = filename;
@@ -979,47 +1043,53 @@
             link.click();
             document.body.removeChild(link);
         }
-
-        window.showDeleteModal = function(fileId, filePath) {
+        
+        // Показать модальное окно удаления
+        function showDeleteModal(fileId, filePath) {
             fileToDelete = { id: fileId, path: filePath };
             document.getElementById('deleteModal').style.display = 'flex';
         }
-
-        window.cancelDelete = function() {
+        
+        // Отмена удаления
+        function cancelDelete() {
             document.getElementById('deleteModal').style.display = 'none';
             fileToDelete = null;
         }
- 
-        window.confirmDelete = async function() {
+        
+        // Подтверждение удаления
+        async function confirmDelete() {
             if (!fileToDelete) return;
             
             try {
-                const { error: dbError } = await supabase
+                // 1. Удаляем запись из базы данных
+                const { error: dbError } = await supabaseClient
                     .from('files')
                     .delete()
                     .eq('id', fileToDelete.id);
                 
                 if (dbError) throw dbError;
-
-                const { error: storageError } = await supabase.storage
+                
+                // 2. Удаляем файл из хранилища
+                const { error: storageError } = await supabaseClient.storage
                     .from('library-files')
                     .remove([fileToDelete.path]);
                 
                 if (storageError) throw storageError;
                 
                 alert('✅ Файл удален для всех пользователей');
-                window.loadFiles();
+                loadFiles();
                 
             } catch (error) {
                 console.error('Ошибка удаления:', error);
                 alert(`❌ Ошибка удаления: ${error.message}`);
             } finally {
-                window.cancelDelete();
+                cancelDelete();
             }
         }
-
+        
+        // Настройка реального времени (обновление при изменении файлов)
         function setupRealtimeUpdates() {
-            supabase
+            supabaseClient
                 .channel('files-channel')
                 .on('postgres_changes', 
                     { 
@@ -1029,35 +1099,46 @@
                     },
                     (payload) => {
                         console.log('Изменение в базе данных:', payload);
+                        // Обновляем список файлов если мы на странице загрузки
                         if (document.getElementById('uploadPage').style.display !== 'none') {
-                            window.loadFiles();
+                            loadFiles();
                         }
                     }
                 )
                 .subscribe();
         }
-
+        
+        // ==================== ИНИЦИАЛИЗАЦИЯ ====================
         
         document.addEventListener('DOMContentLoaded', function() {
-            window.showMainPage();
- 
-            setupRealtimeUpdates();
+            // Инициализируем Supabase только один раз
+            if (!supabaseClient && window.supabase) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                console.log('Supabase инициализирован');
+            }
             
-            console.log('Supabase подключен:', !!supabase);
+            // Начинаем с главной страницы
+            showMainPage();
             
+            // Включаем обновления в реальном времени
+            if (supabaseClient) {
+                setupRealtimeUpdates();
+            }
+            
+            // Закрытие модального окна при клике вне его
             document.getElementById('deleteModal').addEventListener('click', function(e) {
                 if (e.target === this) {
-                    window.cancelDelete();
+                    cancelDelete();
                 }
             });
-
+            
+            // Обновляем список файлов каждые 30 секунд (на всякий случай)
             setInterval(() => {
                 if (document.getElementById('uploadPage').style.display !== 'none') {
-                    window.loadFiles();
+                    loadFiles();
                 }
             }, 30000);
         });
     </script>
 </body>
 </html>
-
